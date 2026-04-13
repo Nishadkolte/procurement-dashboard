@@ -1,4 +1,9 @@
-# 📦 Procurement Intelligence Dashboard
+## 🔗 Live Dashboards
+
+| Platform | Link |
+|---|---|
+| 📊 Looker Studio | https://lookerstudio.google.com/reporting/3ddeb62e-f112-45bf-a7aa-a6c015d0a5e6 |
+| 💻 HTML Dashboard | https://nishadkolte.github.io/procurement-dashboard |# 📦 Procurement Intelligence Dashboard
 
 > An interactive, self-contained procurement analytics dashboard built with vanilla HTML, CSS, and Chart.js — no backend required.
 
