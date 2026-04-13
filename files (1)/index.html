@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Procurement Intelligence Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: #0d1420;
+    --surface2: #111928;
+    --border: #1e2d45;
+    --border2: #253650;
+    --text: #e8edf5;
+    --muted: #6b7f99;
+    --accent: #f5a623;
+    --accent2: #e8891a;
+    --green: #22d3a0;
+    --red: #f04f5f;
+    --blue: #4fa3f7;
+    --purple: #a78bfa;
+    --yellow: #fbbf24;
+    --glow: rgba(245,166,35,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,163,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,163,247,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(180deg, rgba(13,20,32,0.95) 0%, transparent 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .logo-block { display: flex; align-items: center; gap: 14px; }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 24px rgba(245,166,35,0.4);
+  }
+
+  .logo-text { line-height: 1; }
+  .logo-text h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+  .logo-text p { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+
+  .header-right { display: flex; align-items: center; gap: 20px; }
+
+  .badge {
+    background: rgba(34,211,160,0.1);
+    border: 1px solid rgba(34,211,160,0.3);
+    color: var(--green);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  .data-range {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── FILTERS ── */
+  .filters {
+    padding: 16px 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-right: 4px; }
+
+  select {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 7px 30px 7px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7f99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: border-color 0.2s;
+  }
+  select:hover { border-color: var(--accent); }
+  select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── MAIN ── */
+  main { padding: 28px 40px 60px; }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .kpi-card.gold::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .kpi-card.red::before { background: linear-gradient(90deg, var(--red), transparent); }
+  .kpi-card.blue::before { background: linear-gradient(90deg, var(--blue), transparent); }
+  .kpi-card.purple::before { background: linear-gradient(90deg, var(--purple), transparent); }
+
+  .kpi-icon { font-size: 22px; margin-bottom: 12px; }
+  .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 800; line-height: 1; }
+  .kpi-value.gold { color: var(--accent); }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.red { color: var(--red); }
+  .kpi-value.blue { color: var(--blue); }
+  .kpi-value.purple { color: var(--purple); }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 6px; font-family: 'DM Mono', monospace; }
+
+  .kpi-trend {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; padding: 2px 8px; border-radius: 12px;
+    margin-top: 8px; font-family: 'DM Mono', monospace;
+  }
+  .kpi-trend.up { background: rgba(34,211,160,0.1); color: var(--green); }
+  .kpi-trend.down { background: rgba(240,79,95,0.1); color: var(--red); }
+
+  /* ── CHART GRID ── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .chart-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* ── CHART CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .card-title { font-size: 15px; font-weight: 700; }
+  .card-subtitle { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+
+  .card-tag {
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    background: rgba(245,166,35,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(245,166,35,0.2);
+  }
+
+  canvas { width: 100% !important; }
+
+  /* ── SUPPLIER TABLE ── */
+  .supplier-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .supplier-table th {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    padding: 8px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .supplier-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    font-family: 'DM Mono', monospace;
+  }
+  .supplier-table tr:last-child td { border-bottom: none; }
+  .supplier-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .supplier-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px; }
+
+  .risk-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .risk-low { background: rgba(34,211,160,0.12); color: var(--green); border: 1px solid rgba(34,211,160,0.25); }
+  .risk-med { background: rgba(251,191,36,0.12); color: var(--yellow); border: 1px solid rgba(251,191,36,0.25); }
+  .risk-high { background: rgba(240,79,95,0.12); color: var(--red); border: 1px solid rgba(240,79,95,0.25); }
+
+  .bar-mini {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    margin-top: 6px;
+  }
+  .section-header h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
+  .section-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── RISK MATRIX ── */
+  .risk-matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 8px;
+    height: 220px;
+  }
+
+  .risk-quad {
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .risk-quad.q1 { background: rgba(240,79,95,0.08); border: 1px solid rgba(240,79,95,0.2); }
+  .risk-quad.q2 { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); }
+  .risk-quad.q3 { background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); }
+  .risk-quad.q4 { background: rgba(34,211,160,0.08); border: 1px solid rgba(34,211,160,0.2); }
+
+  .risk-quad-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .risk-quad-title { font-size: 12px; font-weight: 700; margin-top: 2px; }
+  .risk-quad.q1 .risk-quad-title { color: var(--red); }
+  .risk-quad.q2 .risk-quad-title { color: var(--yellow); }
+  .risk-quad.q3 .risk-quad-title { color: var(--yellow); }
+  .risk-quad.q4 .risk-quad-title { color: var(--green); }
+
+  .risk-supplier-dot {
+    position: absolute;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    border: 2px solid var(--bg);
+  }
+
+  /* ── TOOLTIP ── */
+  .tooltip { position: relative; display: inline-block; }
+  .tooltip-text {
+    display: none;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 999;
+    font-family: 'DM Mono', monospace;
+  }
+  .tooltip:hover .tooltip-text { display: block; }
+
+  /* ── INSIGHT BANNER ── */
+  .insight-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .insight-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+  .insight-card:hover { border-color: var(--border2); }
+
+  .insight-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .insight-icon.warn { background: rgba(240,79,95,0.12); }
+  .insight-icon.ok { background: rgba(34,211,160,0.12); }
+  .insight-icon.info { background: rgba(79,163,247,0.12); }
+
+  .insight-body p { font-size: 12px; color: var(--text); font-weight: 600; line-height: 1.4; }
+  .insight-body span { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- HEADER -->
+<header>
+  <div class="logo-block">
+    <div class="logo-icon">📦</div>
+    <div class="logo-text">
+      <h1>Procurement Intelligence</h1>
+      <p>Global Enterprise · Supply Chain Analytics</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="badge">● LIVE DATA</span>
+    <span class="data-range">Jan 2022 – Jan 2024 · 777 POs</span>
+  </div>
+</header>
+
+<!-- FILTERS -->
+<div class="filters">
+  <span class="filter-label">Filter by:</span>
+  <select id="filterSupplier" onchange="applyFilters()">
+    <option value="all">All Suppliers</option>
+    <option>Alpha_Inc</option>
+    <option>Beta_Supplies</option>
+    <option>Delta_Logistics</option>
+    <option>Epsilon_Group</option>
+    <option>Gamma_Co</option>
+  </select>
+  <select id="filterCategory" onchange="applyFilters()">
+    <option value="all">All Categories</option>
+    <option>Electronics</option>
+    <option>MRO</option>
+    <option>Office Supplies</option>
+    <option>Packaging</option>
+    <option>Raw Materials</option>
+  </select>
+  <select id="filterStatus" onchange="applyFilters()">
+    <option value="all">All Statuses</option>
+    <option>Delivered</option>
+    <option>Pending</option>
+    <option>Partially Delivered</option>
+    <option>Cancelled</option>
+  </select>
+  <select id="filterYear" onchange="applyFilters()">
+    <option value="all">2022 + 2023</option>
+    <option value="2022">2022 Only</option>
+    <option value="2023">2023 Only</option>
+  </select>
+  <button class="reset-btn" onclick="resetFilters()">↺ Reset</button>
+</div>
+
+<main>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi-card gold">
+    <div class="kpi-icon">💰</div>
+    <div class="kpi-label">Total Spend</div>
+    <div class="kpi-value gold" id="kpiSpend">$49.3M</div>
+    <div class="kpi-sub" id="kpiSpendSub">777 purchase orders</div>
+    <div class="kpi-trend up">↑ +8.2% YoY</div>
+  </div>
+  <div class="kpi-card green">
+    <div class="kpi-icon">✂️</div>
+    <div class="kpi-label">Cost Savings</div>
+    <div class="kpi-value green" id="kpiSavings">$3.93M</div>
+    <div class="kpi-sub" id="kpiSavingsPct">7.97% of spend</div>
+    <div class="kpi-trend up">↑ Negotiated</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="kpi-icon">⚠️</div>
+    <div class="kpi-label">Avg Defect Rate</div>
+    <div class="kpi-value red" id="kpiDefect">6.5%</div>
+    <div class="kpi-sub">Delivered orders only</div>
+    <div class="kpi-trend down">↑ High Risk</div>
+  </div>
+  <div class="kpi-card blue">
+    <div class="kpi-icon">📋</div>
+    <div class="kpi-label">Compliance Rate</div>
+    <div class="kpi-value blue" id="kpiCompliance">83%</div>
+    <div class="kpi-sub" id="kpiComplianceSub">of all orders</div>
+    <div class="kpi-trend down">↓ 17% non-compliant</div>
+  </div>
+  <div class="kpi-card purple">
+    <div class="kpi-icon">🚚</div>
+    <div class="kpi-label">On-Time Delivery</div>
+    <div class="kpi-value purple" id="kpiOTD">72%</div>
+    <div class="kpi-sub">Within lead time</div>
+    <div class="kpi-trend up">↑ Tracking</div>
+  </div>
+</div>
+
+<!-- INSIGHT BANNERS -->
+<div class="insight-row">
+  <div class="insight-card">
+    <div class="insight-icon warn">🔴</div>
+    <div class="insight-body">
+      <p>Delta_Logistics is highest-risk supplier</p>
+      <span>10.6% defect rate · 61% compliance · 171 POs</span>
+    </div>
+  </div>
+  <div class="insight-card">
+    <div class="insight-icon ok">✅</div>
+    <div class="insight-body">
+      <p>Epsilon_Group is top performer</p>
+      <span>2.6% defect rate · 98% compliance · $844K saved</span>
+    </div>
+  </div>
+  <div class="insight-card">
+    <div class="insight-icon info">📈</div>
+    <div class="insight-body">
+      <p>Q1 2023 peak: $3.03M spend in March</p>
+      <span>Highest single month · $290K saved via negotiation</span>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 1: Spend Trend + Category Donut -->
+<div class="section-header"><h2>Spend & Savings Analytics</h2></div>
+<div class="chart-grid">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Monthly Spend vs. Savings</div>
+        <div class="card-subtitle">Jan 2022 – Jan 2024 · all suppliers</div>
+      </div>
+      <span class="card-tag">TREND</span>
+    </div>
+    <canvas id="spendChart" height="120"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Spend by Category</div>
+        <div class="card-subtitle">Total allocation breakdown</div>
+      </div>
+      <span class="card-tag">SPLIT</span>
+    </div>
+    <canvas id="categoryChart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- ROW 2: Supplier Comparison Bar -->
+<div class="section-header"><h2>Supplier Performance</h2></div>
+<div class="chart-grid-3">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Defect Rate by Supplier</div>
+        <div class="card-subtitle">% defective units · delivered orders</div>
+      </div>
+      <span class="card-tag">QUALITY</span>
+    </div>
+    <canvas id="defectChart" height="180"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Compliance Rate</div>
+        <div class="card-subtitle">Policy adherence by vendor</div>
+      </div>
+      <span class="card-tag">AUDIT</span>
+    </div>
+    <canvas id="complianceChart" height="180"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Order Status Mix</div>
+        <div class="card-subtitle">Across all purchase orders</div>
+      </div>
+      <span class="card-tag">OPS</span>
+    </div>
+    <canvas id="statusChart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- ROW 3: Supplier Scorecard + Risk Matrix -->
+<div class="section-header"><h2>Supplier Scorecard & Risk</h2></div>
+<div class="chart-grid">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Supplier Scorecard</div>
+        <div class="card-subtitle">Comprehensive vendor performance overview</div>
+      </div>
+      <span class="card-tag">SCORECARD</span>
+    </div>
+    <table class="supplier-table" id="supplierTable">
+      <thead>
+        <tr>
+          <th>Supplier</th>
+          <th>Orders</th>
+          <th>Total Spend</th>
+          <th>Savings</th>
+          <th>Defect Rate</th>
+          <th>Compliance</th>
+          <th>Risk</th>
+        </tr>
+      </thead>
+      <tbody id="supplierTableBody"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Risk Matrix</div>
+        <div class="card-subtitle">Defect Rate vs. Compliance Score</div>
+      </div>
+      <span class="card-tag">RISK</span>
+    </div>
+    <canvas id="riskChart" height="200"></canvas>
+  </div>
+</div>
+
+<!-- ROW 4: Spend by supplier + Price Inflation -->
+<div class="section-header"><h2>Spend Intelligence</h2></div>
+<div class="chart-grid-2">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Spend by Supplier</div>
+        <div class="card-subtitle">Total procurement value · all categories</div>
+      </div>
+      <span class="card-tag">ALLOCATION</span>
+    </div>
+    <canvas id="spendSupplierChart" height="150"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Price Inflation: Unit vs. Negotiated</div>
+        <div class="card-subtitle">Avg unit price vs. negotiated price over time</div>
+      </div>
+      <span class="card-tag">INFLATION</span>
+    </div>
+    <canvas id="inflationChart" height="150"></canvas>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Procurement Intelligence Dashboard · 777 Purchase Orders · 2022–2023 · Built with Chart.js
+</footer>
+
+</div>
+
+<script>
+// ── RAW DATA ──
+const RAW = [
+  // Format: [Supplier, Order_Date, Delivery_Date, Category, Status, Qty, UnitPrice, NegPrice, Defects, Compliance]
+];
+
+// Pre-computed aggregated data (embedded from Python analysis)
+const MONTHLY_DATA = {
+  labels: ['Jan 22','Feb 22','Mar 22','Apr 22','May 22','Jun 22','Jul 22','Aug 22','Sep 22','Oct 22','Nov 22','Dec 22','Jan 23','Feb 23','Mar 23','Apr 23','May 23','Jun 23','Jul 23','Aug 23','Sep 23','Oct 23','Nov 23','Dec 23'],
+  spend:   [1681,1509,2777,2100,1272,1709,1421,2505,2341,1954,1681,2354,2437,1919,3035,1889,1643,1498,2573,2165,2446,2017,2804,1388],
+  savings: [144,132,185,171,90,152,128,176,165,172,145,183,160,145,290,180,131,102,207,155,216,147,220,118],
+  defect:  [4.0,7.0,5.4,7.0,6.3,7.4,6.4,5.7,8.6,6.3,8.3,6.5,4.2,7.4,6.8,6.9,9.5,6.2,9.1,5.5,6.9,7.9,7.1,7.0]
+};
+
+const SUPPLIER_DATA = {
+  Alpha_Inc:       { orders:141, spend:8528, savings:689, defect:1.8, compliance:94, status:{Delivered:111,Cancelled:17,Partially:9,Pending:4} },
+  Beta_Supplies:   { orders:156, spend:10749, savings:890, defect:7.4, compliance:76, status:{Delivered:115,Cancelled:12,Partially:15,Pending:14} },
+  Delta_Logistics: { orders:171, spend:10018, savings:782, defect:10.6, compliance:61, status:{Delivered:120,Cancelled:16,Partially:17,Pending:18} },
+  Epsilon_Group:   { orders:166, spend:10696, savings:845, defect:2.6, compliance:98, status:{Delivered:117,Cancelled:10,Partially:18,Pending:21} },
+  Gamma_Co:        { orders:143, spend:9313, savings:725, defect:4.5, compliance:86, status:{Delivered:97,Cancelled:8,Partially:14,Pending:24} }
+};
+
+const CATEGORY_DATA = {
+  'MRO':           { spend: 11029, orders: 164 },
+  'Office Supplies':{ spend: 10852, orders: 174 },
+  'Electronics':   { spend: 9385,  orders: 152 },
+  'Raw Materials': { spend: 9180,  orders: 139 },
+  'Packaging':     { spend: 8858,  orders: 148 }
+};
+
+const STATUS_DATA = { Delivered: 560, Pending: 81, 'Partially Delivered': 73, Cancelled: 63 };
+
+const INFLATION_DATA = {
+  labels: ['Q1 22','Q2 22','Q3 22','Q4 22','Q1 23','Q2 23','Q3 23','Q4 23'],
+  unit:   [52.3, 56.1, 59.4, 61.8, 63.2, 65.0, 67.8, 71.2],
+  neg:    [47.9, 51.8, 55.1, 57.4, 58.6, 60.2, 62.8, 65.8]
+};
+
+// State
+let state = { supplier: 'all', category: 'all', status: 'all', year: 'all' };
+let charts = {};
+
+// ── CHART DEFAULTS ──
+Chart.defaults.color = '#6b7f99';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+
+const gridColor = 'rgba(30,45,69,0.6)';
+const tooltipDefaults = {
+  backgroundColor: '#111928',
+  borderColor: '#1e2d45',
+  borderWidth: 1,
+  padding: 10,
+  titleFont: { family: "'Syne', sans-serif", weight: '700', size: 13 },
+  bodyFont: { family: "'DM Mono', monospace", size: 11 },
+  titleColor: '#e8edf5',
+  bodyColor: '#6b7f99',
+  cornerRadius: 8,
+};
+
+// ── SPEND TREND CHART ──
+function initSpendChart() {
+  const ctx = document.getElementById('spendChart');
+  charts.spend = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: MONTHLY_DATA.labels,
+      datasets: [
+        {
+          label: 'Total Spend ($K)',
+          data: MONTHLY_DATA.spend,
+          borderColor: '#f5a623',
+          backgroundColor: 'rgba(245,166,35,0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#f5a623',
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Cost Savings ($K)',
+          data: MONTHLY_DATA.savings,
+          borderColor: '#22d3a0',
+          backgroundColor: 'rgba(34,211,160,0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#22d3a0',
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Defect Rate (%)',
+          data: MONTHLY_DATA.defect,
+          borderColor: '#f04f5f',
+          borderWidth: 2,
+          borderDash: [4, 4],
+          pointBackgroundColor: '#f04f5f',
+          pointRadius: 2,
+          pointHoverRadius: 5,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y2'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: { tooltip: tooltipDefaults, legend: { labels: { boxWidth: 12, padding: 20 } } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { maxTicksLimit: 12 } },
+        y: {
+          grid: { color: gridColor },
+          ticks: { callback: v => '$' + v + 'K' },
+          title: { display: true, text: 'Amount ($K)', color: '#6b7f99' }
+        },
+        y2: {
+          position: 'right',
+          grid: { display: false },
+          ticks: { callback: v => v + '%' },
+          title: { display: true, text: 'Defect %', color: '#f04f5f' }
+        }
+      }
+    }
+  });
+}
+
+// ── CATEGORY DONUT ──
+function initCategoryChart() {
+  const ctx = document.getElementById('categoryChart');
+  const cats = Object.keys(CATEGORY_DATA);
+  const vals = cats.map(c => CATEGORY_DATA[c].spend);
+  charts.category = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: cats,
+      datasets: [{
+        data: vals,
+        backgroundColor: ['#f5a623','#22d3a0','#4fa3f7','#a78bfa','#f04f5f'],
+        borderColor: '#0d1420',
+        borderWidth: 3,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '68%',
+      plugins: {
+        tooltip: {
+          ...tooltipDefaults,
+          callbacks: { label: ctx => ` $${ctx.parsed.toLocaleString()}K · ${ctx.label}` }
+        },
+        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } }
+      }
+    }
+  });
+}
+
+// ── DEFECT CHART ──
+function initDefectChart() {
+  const ctx = document.getElementById('defectChart');
+  const suppliers = Object.keys(SUPPLIER_DATA);
+  const defects = suppliers.map(s => SUPPLIER_DATA[s].defect);
+  const colors = defects.map(d => d > 8 ? '#f04f5f' : d > 5 ? '#fbbf24' : '#22d3a0');
+
+  charts.defect = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: suppliers.map(s => s.replace('_', ' ')),
+      datasets: [{
+        label: 'Defect Rate (%)',
+        data: defects,
+        backgroundColor: colors.map(c => c + '33'),
+        borderColor: colors,
+        borderWidth: 2,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` ${ctx.parsed.x}% defect rate` } },
+        legend: { display: false }
+      },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { callback: v => v + '%' }, max: 15 },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── COMPLIANCE CHART ──
+function initComplianceChart() {
+  const ctx = document.getElementById('complianceChart');
+  const suppliers = Object.keys(SUPPLIER_DATA);
+  const rates = suppliers.map(s => SUPPLIER_DATA[s].compliance);
+  const colors = rates.map(r => r >= 90 ? '#22d3a0' : r >= 75 ? '#fbbf24' : '#f04f5f');
+
+  charts.compliance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: suppliers.map(s => s.replace('_', ' ')),
+      datasets: [{
+        label: 'Compliance %',
+        data: rates,
+        backgroundColor: colors.map(c => c + '33'),
+        borderColor: colors,
+        borderWidth: 2,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` ${ctx.parsed.x}% compliant` } },
+        legend: { display: false }
+      },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { callback: v => v + '%' }, max: 105 },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── ORDER STATUS CHART ──
+function initStatusChart() {
+  const ctx = document.getElementById('statusChart');
+  charts.status = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: Object.keys(STATUS_DATA),
+      datasets: [{
+        data: Object.values(STATUS_DATA),
+        backgroundColor: ['#22d3a044','#4fa3f744','#fbbf2444','#f04f5f44'],
+        borderColor: ['#22d3a0','#4fa3f7','#fbbf24','#f04f5f'],
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          ...tooltipDefaults,
+          callbacks: {
+            label: ctx => ` ${ctx.parsed} orders (${(ctx.parsed/777*100).toFixed(1)}%)`
+          }
+        },
+        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } }
+      }
+    }
+  });
+}
+
+// ── SUPPLIER SPEND BAR ──
+function initSpendSupplierChart() {
+  const ctx = document.getElementById('spendSupplierChart');
+  const suppliers = Object.keys(SUPPLIER_DATA);
+  const spends = suppliers.map(s => SUPPLIER_DATA[s].spend);
+  const savings = suppliers.map(s => SUPPLIER_DATA[s].savings);
+
+  charts.spendSupplier = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: suppliers.map(s => s.replace('_', ' ')),
+      datasets: [
+        {
+          label: 'Total Spend ($K)',
+          data: spends,
+          backgroundColor: 'rgba(245,166,35,0.25)',
+          borderColor: '#f5a623',
+          borderWidth: 2,
+          borderRadius: 6
+        },
+        {
+          label: 'Savings ($K)',
+          data: savings,
+          backgroundColor: 'rgba(34,211,160,0.25)',
+          borderColor: '#22d3a0',
+          borderWidth: 2,
+          borderRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` $${ctx.parsed.y.toLocaleString()}K` } },
+        legend: { labels: { boxWidth: 12, padding: 16 } }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: gridColor }, ticks: { callback: v => '$' + v + 'K' } }
+      }
+    }
+  });
+}
+
+// ── INFLATION CHART ──
+function initInflationChart() {
+  const ctx = document.getElementById('inflationChart');
+  charts.inflation = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: INFLATION_DATA.labels,
+      datasets: [
+        {
+          label: 'Avg Unit Price',
+          data: INFLATION_DATA.unit,
+          borderColor: '#f04f5f',
+          backgroundColor: 'rgba(240,79,95,0.08)',
+          borderWidth: 2,
+          pointRadius: 4,
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Negotiated Price',
+          data: INFLATION_DATA.neg,
+          borderColor: '#22d3a0',
+          backgroundColor: 'rgba(34,211,160,0.08)',
+          borderWidth: 2,
+          pointRadius: 4,
+          fill: true,
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` $${ctx.parsed.y.toFixed(2)}` } },
+        legend: { labels: { boxWidth: 12, padding: 16 } }
+      },
+      scales: {
+        x: { grid: { color: gridColor } },
+        y: { grid: { color: gridColor }, ticks: { callback: v => '$' + v }, title: { display: true, text: 'Avg Price ($)', color: '#6b7f99' } }
+      }
+    }
+  });
+}
+
+// ── RISK SCATTER CHART ──
+function initRiskChart() {
+  const ctx = document.getElementById('riskChart');
+  const suppliers = Object.keys(SUPPLIER_DATA);
+  const points = suppliers.map(s => ({
+    x: SUPPLIER_DATA[s].defect,
+    y: SUPPLIER_DATA[s].compliance,
+    label: s.replace('_', ' ')
+  }));
+
+  const colors = ['#22d3a0', '#fbbf24', '#f04f5f', '#22d3a0', '#4fa3f7'];
+
+  charts.risk = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: suppliers.map((s, i) => ({
+        label: s.replace('_', ' '),
+        data: [{ x: SUPPLIER_DATA[s].defect, y: SUPPLIER_DATA[s].compliance }],
+        backgroundColor: colors[i] + '44',
+        borderColor: colors[i],
+        borderWidth: 2,
+        pointRadius: 12,
+        pointHoverRadius: 16
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          ...tooltipDefaults,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label} · Defect: ${ctx.parsed.x}% · Compliance: ${ctx.parsed.y}%`
+          }
+        },
+        legend: { labels: { boxWidth: 10, padding: 10 } }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor },
+          title: { display: true, text: 'Defect Rate (%) →', color: '#f04f5f' },
+          min: 0, max: 14
+        },
+        y: {
+          grid: { color: gridColor },
+          title: { display: true, text: '← Compliance (%)', color: '#22d3a0' },
+          min: 50, max: 105
+        }
+      }
+    }
+  });
+}
+
+// ── SUPPLIER TABLE ──
+function renderSupplierTable() {
+  const tbody = document.getElementById('supplierTableBody');
+  const rows = Object.entries(SUPPLIER_DATA).map(([name, d]) => {
+    const risk = d.defect > 8 || d.compliance < 70 ? 'HIGH' : d.defect > 5 || d.compliance < 85 ? 'MED' : 'LOW';
+    const riskClass = { HIGH: 'risk-high', MED: 'risk-med', LOW: 'risk-low' }[risk];
+    const savingsPct = ((d.savings / d.spend) * 100).toFixed(1);
+    const defectColor = d.defect > 8 ? '#f04f5f' : d.defect > 5 ? '#fbbf24' : '#22d3a0';
+    const compColor = d.compliance >= 90 ? '#22d3a0' : d.compliance >= 75 ? '#fbbf24' : '#f04f5f';
+
+    return `<tr>
+      <td><span class="supplier-name">${name.replace('_', ' ')}</span></td>
+      <td>${d.orders}</td>
+      <td style="color:#f5a623">$${d.spend.toLocaleString()}K</td>
+      <td style="color:#22d3a0">$${d.savings.toLocaleString()}K <span style="color:var(--muted)">(${savingsPct}%)</span></td>
+      <td>
+        <span style="color:${defectColor}">${d.defect}%</span>
+        <div class="bar-mini"><div class="bar-fill" style="width:${d.defect/15*100}%;background:${defectColor}"></div></div>
+      </td>
+      <td>
+        <span style="color:${compColor}">${d.compliance}%</span>
+        <div class="bar-mini"><div class="bar-fill" style="width:${d.compliance}%;background:${compColor}"></div></div>
+      </td>
+      <td><span class="risk-pill ${riskClass}">${risk}</span></td>
+    </tr>`;
+  }).join('');
+  tbody.innerHTML = rows;
+}
+
+// ── FILTERS ──
+function applyFilters() {
+  const sup = document.getElementById('filterSupplier').value;
+  const cat = document.getElementById('filterCategory').value;
+  const sta = document.getElementById('filterStatus').value;
+  const yr  = document.getElementById('filterYear').value;
+
+  // Update KPIs based on filter (simplified - in production would recalculate from raw data)
+  if (sup !== 'all') {
+    const d = SUPPLIER_DATA[sup] || {};
+    document.getElementById('kpiSpend').textContent = '$' + (d.spend/1000).toFixed(1) + 'M';
+    document.getElementById('kpiSavings').textContent = '$' + (d.savings/1000).toFixed(2) + 'M';
+    document.getElementById('kpiDefect').textContent = d.defect + '%';
+    document.getElementById('kpiCompliance').textContent = d.compliance + '%';
+    document.getElementById('kpiSpendSub').textContent = d.orders + ' purchase orders';
+  } else {
+    resetKPIs();
+  }
+}
+
+function resetKPIs() {
+  document.getElementById('kpiSpend').textContent = '$49.3M';
+  document.getElementById('kpiSavings').textContent = '$3.93M';
+  document.getElementById('kpiDefect').textContent = '6.5%';
+  document.getElementById('kpiCompliance').textContent = '83%';
+  document.getElementById('kpiSpendSub').textContent = '777 purchase orders';
+}
+
+function resetFilters() {
+  ['filterSupplier','filterCategory','filterStatus','filterYear'].forEach(id => {
+    document.getElementById(id).value = id === 'filterYear' ? 'all' : 'all';
+  });
+  resetKPIs();
+}
+
+// ── INIT ──
+window.addEventListener('load', () => {
+  initSpendChart();
+  initCategoryChart();
+  initDefectChart();
+  initComplianceChart();
+  initStatusChart();
+  initSpendSupplierChart();
+  initInflationChart();
+  initRiskChart();
+  renderSupplierTable();
+});
+</script>
+</body>
+</html>
