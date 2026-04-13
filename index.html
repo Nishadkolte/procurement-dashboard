@@ -2,1149 +2,730 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Procurement Intelligence Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Procurement KPI Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #080c14;
-    --surface: #0d1420;
-    --surface2: #111928;
-    --border: #1e2d45;
-    --border2: #253650;
-    --text: #e8edf5;
-    --muted: #6b7f99;
-    --accent: #f5a623;
-    --accent2: #e8891a;
-    --green: #22d3a0;
-    --red: #f04f5f;
-    --blue: #4fa3f7;
-    --purple: #a78bfa;
-    --yellow: #fbbf24;
-    --glow: rgba(245,166,35,0.15);
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2f5;--card:#fff;--border:#e2e8f0;--text:#1a202c;--muted:#718096;
+  --amber:#d97706;--amber-l:#fef3c7;--green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fee2e2;--blue:#2563eb;--blue-l:#dbeafe;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* HEADER */
+.header{background:#1e293b;color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{width:32px;height:32px;background:var(--amber);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.header-logo svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.header-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.header-sub{font-size:11px;color:#94a3b8;font-family:'JetBrains Mono',monospace;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:8px}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.3);color:#4ade80;padding:4px 10px;border-radius:20px;font-size:11px;font-family:'JetBrains Mono',monospace}
+.live-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* FILTERS BAR */
+.filters{background:#fff;border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:56px;z-index:99;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.filter-group{display:flex;align-items:center;gap:6px}
+.filter-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+select.fsel{font-size:12px;padding:6px 28px 6px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-family:'Inter',sans-serif;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23718096' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;transition:border-color .15s}
+select.fsel:focus{outline:none;border-color:var(--blue)}
+select.fsel:hover{border-color:#94a3b8}
+.filter-divider{width:1px;height:24px;background:var(--border)}
+.reset-btn{font-size:12px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;display:flex;align-items:center;gap:5px}
+.reset-btn:hover{border-color:#94a3b8;color:var(--text)}
+.filter-count{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-left:4px}
 
-  /* Animated background grid */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(79,163,247,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(79,163,247,0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* MAIN */
+.main{padding:20px 24px;max-width:1600px;margin:0 auto}
 
-  .wrapper { position: relative; z-index: 1; }
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;transition:box-shadow .2s}
+.kpi-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.amber::after{background:linear-gradient(90deg,var(--amber),#fbbf24)}
+.kpi-card.green::after{background:linear-gradient(90deg,var(--green),#22c55e)}
+.kpi-card.red::after{background:linear-gradient(90deg,var(--red),#f87171)}
+.kpi-card.blue::after{background:linear-gradient(90deg,var(--blue),#60a5fa)}
+.kpi-card.purple::after{background:linear-gradient(90deg,var(--purple),#a78bfa)}
+.kpi-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.kpi-value.amber{color:var(--amber)}.kpi-value.green{color:var(--green)}.kpi-value.red{color:var(--red)}.kpi-value.blue{color:var(--blue)}.kpi-value.purple{color:var(--purple)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
+.kpi-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:6px;padding:2px 7px;border-radius:10px}
+.kpi-delta.g{background:var(--green-l);color:var(--green)}
+.kpi-delta.r{background:var(--red-l);color:var(--red)}
+.kpi-delta.a{background:var(--amber-l);color:var(--amber)}
 
-  /* ── HEADER ── */
-  header {
-    padding: 28px 40px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: linear-gradient(180deg, rgba(13,20,32,0.95) 0%, transparent 100%);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    backdrop-filter: blur(12px);
-  }
+/* ALERT */
+.alert{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.alert svg{width:16px;height:16px;stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+.alert-text{font-size:12px;color:#991b1b}
+.alert-text strong{font-weight:600}
 
-  .logo-block { display: flex; align-items: center; gap: 14px; }
+/* SECTION TITLE */
+.section-title{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;margin-top:4px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
 
-  .logo-icon {
-    width: 44px; height: 44px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 0 24px rgba(245,166,35,0.4);
-  }
+/* CHART GRIDS */
+.row-5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.row-2-1{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.row-1{margin-bottom:20px}
 
-  .logo-text { line-height: 1; }
-  .logo-text h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
-  .logo-text p { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.card-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-desc{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.card-tag{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.5px}
+.card-body{padding:16px}
+.card-body-0{padding:0}
 
-  .header-right { display: flex; align-items: center; gap: 20px; }
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{padding:9px 14px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);background:#f8fafc;white-space:nowrap}
+.tbl td{padding:11px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#f8fafc}
+.sup-name{font-family:'Inter',sans-serif;font-weight:600;font-size:13px;color:var(--text)}
+.dot-row{display:flex;align-items:center;gap:8px}
+.sup-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.risk-pill{display:inline-block;font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px;font-family:'Inter',sans-serif}
+.risk-H{background:var(--red-l);color:var(--red)}.risk-M{background:var(--amber-l);color:var(--amber)}.risk-L{background:var(--green-l);color:var(--green)}
+.mini-bar-wrap{display:flex;align-items:center;gap:6px}
+.mini-bar-track{width:56px;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;flex-shrink:0}
+.mini-bar-fill{height:100%;border-radius:3px}
 
-  .badge {
-    background: rgba(34,211,160,0.1);
-    border: 1px solid rgba(34,211,160,0.3);
-    color: var(--green);
-    font-size: 11px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-  }
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
-  .data-range {
-    font-size: 12px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-  }
+/* STATUS LEGEND */
+.status-legend{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.sl-row{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.sl-left{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.sl-val{font-family:'JetBrains Mono',monospace;color:var(--text);font-weight:500}
+.sl-pct{color:var(--muted);font-size:10px}
 
-  /* ── FILTERS ── */
-  .filters {
-    padding: 16px 40px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
+/* CAT BARS */
+.cat-list{display:flex;flex-direction:column;gap:14px}
+.cat-item-head{display:flex;justify-content:space-between;margin-bottom:5px}
+.cat-name{font-size:13px;font-weight:500;color:var(--text)}
+.cat-val{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted)}
+.cat-track{height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+.cat-fill{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
 
-  .filter-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-right: 4px; }
+/* RISK QUADRANT */
+.rq-wrap{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px}
+.rq{border-radius:8px;padding:14px;position:relative;min-height:90px}
+.rq-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.rq-title{font-size:12px;font-weight:700;margin-top:4px}
+.rq-chips{position:absolute;bottom:10px;right:10px;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.rq-chip{font-size:9px;padding:2px 7px;border-radius:3px;font-weight:600;font-family:'Inter',sans-serif}
+.rq-danger{background:#fee2e2;border:1px solid #fca5a5}.rq-danger .rq-title{color:var(--red)}.rq-danger .rq-chip{background:#fca5a5;color:var(--red)}
+.rq-warn{background:#fef3c7;border:1px solid #fcd34d}.rq-warn .rq-title{color:var(--amber)}.rq-warn .rq-chip{background:#fcd34d;color:#92400e}
+.rq-safe{background:#dcfce7;border:1px solid #86efac}.rq-safe .rq-title{color:var(--green)}.rq-safe .rq-chip{background:#86efac;color:var(--green)}
+.rq-axis{display:flex;justify-content:space-between;font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--muted);padding:6px 2px 0}
 
-  select {
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    padding: 7px 30px 7px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-family: 'DM Mono', monospace;
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7f99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    transition: border-color 0.2s;
-  }
-  select:hover { border-color: var(--accent); }
-  select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+/* NO DATA */
+.no-data{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--muted);font-size:13px;gap:8px}
+.no-data svg{width:32px;height:32px;stroke:var(--border);stroke-width:1.5;fill:none}
 
-  .reset-btn {
-    background: transparent;
-    border: 1px solid var(--border2);
-    color: var(--muted);
-    padding: 7px 14px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-family: 'DM Mono', monospace;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e0;border-radius:3px}
 
-  /* ── MAIN ── */
-  main { padding: 28px 40px 60px; }
-
-  /* ── KPI CARDS ── */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s, border-color 0.2s;
-  }
-  .kpi-card:hover { transform: translateY(-2px); border-color: var(--border2); }
-
-  .kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-  .kpi-card.gold::before { background: linear-gradient(90deg, var(--accent), transparent); }
-  .kpi-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
-  .kpi-card.red::before { background: linear-gradient(90deg, var(--red), transparent); }
-  .kpi-card.blue::before { background: linear-gradient(90deg, var(--blue), transparent); }
-  .kpi-card.purple::before { background: linear-gradient(90deg, var(--purple), transparent); }
-
-  .kpi-icon { font-size: 22px; margin-bottom: 12px; }
-  .kpi-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
-  .kpi-value { font-size: 26px; font-weight: 800; line-height: 1; }
-  .kpi-value.gold { color: var(--accent); }
-  .kpi-value.green { color: var(--green); }
-  .kpi-value.red { color: var(--red); }
-  .kpi-value.blue { color: var(--blue); }
-  .kpi-value.purple { color: var(--purple); }
-  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 6px; font-family: 'DM Mono', monospace; }
-
-  .kpi-trend {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 11px; padding: 2px 8px; border-radius: 12px;
-    margin-top: 8px; font-family: 'DM Mono', monospace;
-  }
-  .kpi-trend.up { background: rgba(34,211,160,0.1); color: var(--green); }
-  .kpi-trend.down { background: rgba(240,79,95,0.1); color: var(--red); }
-
-  /* ── CHART GRID ── */
-  .chart-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-
-  .chart-grid-3 {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-
-  .chart-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-
-  /* ── CHART CARD ── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .card-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-
-  .card-title { font-size: 15px; font-weight: 700; }
-  .card-subtitle { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
-
-  .card-tag {
-    font-size: 10px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-    background: rgba(245,166,35,0.1);
-    color: var(--accent);
-    border: 1px solid rgba(245,166,35,0.2);
-  }
-
-  canvas { width: 100% !important; }
-
-  /* ── SUPPLIER TABLE ── */
-  .supplier-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .supplier-table th {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-    padding: 8px 14px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-  .supplier-table td {
-    padding: 12px 14px;
-    font-size: 13px;
-    border-bottom: 1px solid rgba(30,45,69,0.5);
-    font-family: 'DM Mono', monospace;
-  }
-  .supplier-table tr:last-child td { border-bottom: none; }
-  .supplier-table tr:hover td { background: rgba(255,255,255,0.02); }
-
-  .supplier-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 14px; }
-
-  .risk-pill {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-  .risk-low { background: rgba(34,211,160,0.12); color: var(--green); border: 1px solid rgba(34,211,160,0.25); }
-  .risk-med { background: rgba(251,191,36,0.12); color: var(--yellow); border: 1px solid rgba(251,191,36,0.25); }
-  .risk-high { background: rgba(240,79,95,0.12); color: var(--red); border: 1px solid rgba(240,79,95,0.25); }
-
-  .bar-mini {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 4px;
-  }
-  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-
-  /* ── SECTION HEADER ── */
-  .section-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-    margin-top: 6px;
-  }
-  .section-header h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
-  .section-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-  /* ── RISK MATRIX ── */
-  .risk-matrix {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 8px;
-    height: 220px;
-  }
-
-  .risk-quad {
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 10px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .risk-quad.q1 { background: rgba(240,79,95,0.08); border: 1px solid rgba(240,79,95,0.2); }
-  .risk-quad.q2 { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); }
-  .risk-quad.q3 { background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); }
-  .risk-quad.q4 { background: rgba(34,211,160,0.08); border: 1px solid rgba(34,211,160,0.2); }
-
-  .risk-quad-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-family: 'DM Mono', monospace; }
-  .risk-quad-title { font-size: 12px; font-weight: 700; margin-top: 2px; }
-  .risk-quad.q1 .risk-quad-title { color: var(--red); }
-  .risk-quad.q2 .risk-quad-title { color: var(--yellow); }
-  .risk-quad.q3 .risk-quad-title { color: var(--yellow); }
-  .risk-quad.q4 .risk-quad-title { color: var(--green); }
-
-  .risk-supplier-dot {
-    position: absolute;
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 700;
-    font-family: 'DM Mono', monospace;
-    border: 2px solid var(--bg);
-  }
-
-  /* ── TOOLTIP ── */
-  .tooltip { position: relative; display: inline-block; }
-  .tooltip-text {
-    display: none;
-    position: absolute;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 11px;
-    white-space: nowrap;
-    z-index: 999;
-    font-family: 'DM Mono', monospace;
-  }
-  .tooltip:hover .tooltip-text { display: block; }
-
-  /* ── INSIGHT BANNER ── */
-  .insight-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .insight-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    transition: border-color 0.2s;
-  }
-  .insight-card:hover { border-color: var(--border2); }
-
-  .insight-icon {
-    width: 34px; height: 34px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0;
-  }
-  .insight-icon.warn { background: rgba(240,79,95,0.12); }
-  .insight-icon.ok { background: rgba(34,211,160,0.12); }
-  .insight-icon.info { background: rgba(79,163,247,0.12); }
-
-  .insight-body p { font-size: 12px; color: var(--text); font-weight: 600; line-height: 1.4; }
-  .insight-body span { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
-
-  /* ── FOOTER ── */
-  footer {
-    text-align: center;
-    padding: 20px;
-    border-top: 1px solid var(--border);
-    font-size: 11px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-  }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+/* RESPONSIVE */
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.row-5{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.row-2-1,.row-3,.row-2{grid-template-columns:1fr}.row-5{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<div class="wrapper">
 
-<!-- HEADER -->
-<header>
-  <div class="logo-block">
-    <div class="logo-icon">📦</div>
-    <div class="logo-text">
-      <h1>Procurement Intelligence</h1>
-      <p>Global Enterprise · Supply Chain Analytics</p>
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+    <div>
+      <div class="header-title">Procurement KPI Dashboard</div>
+      <div class="header-sub">Global Enterprise · 777 Purchase Orders · 2022–2023</div>
     </div>
   </div>
   <div class="header-right">
-    <span class="badge">● LIVE DATA</span>
-    <span class="data-range">Jan 2022 – Jan 2024 · 777 POs</span>
+    <div class="live-badge">dataset loaded</div>
   </div>
-</header>
+</div>
 
-<!-- FILTERS -->
 <div class="filters">
-  <span class="filter-label">Filter by:</span>
-  <select id="filterSupplier" onchange="applyFilters()">
-    <option value="all">All Suppliers</option>
-    <option>Alpha_Inc</option>
-    <option>Beta_Supplies</option>
-    <option>Delta_Logistics</option>
-    <option>Epsilon_Group</option>
-    <option>Gamma_Co</option>
-  </select>
-  <select id="filterCategory" onchange="applyFilters()">
-    <option value="all">All Categories</option>
-    <option>Electronics</option>
-    <option>MRO</option>
-    <option>Office Supplies</option>
-    <option>Packaging</option>
-    <option>Raw Materials</option>
-  </select>
-  <select id="filterStatus" onchange="applyFilters()">
-    <option value="all">All Statuses</option>
-    <option>Delivered</option>
-    <option>Pending</option>
-    <option>Partially Delivered</option>
-    <option>Cancelled</option>
-  </select>
-  <select id="filterYear" onchange="applyFilters()">
-    <option value="all">2022 + 2023</option>
-    <option value="2022">2022 Only</option>
-    <option value="2023">2023 Only</option>
-  </select>
-  <button class="reset-btn" onclick="resetFilters()">↺ Reset</button>
+  <div class="filter-group">
+    <span class="filter-label">Supplier</span>
+    <select class="fsel" id="f-supplier" onchange="applyFilters()">
+      <option value="all">All Suppliers</option>
+      <option>Alpha_Inc</option>
+      <option>Beta_Supplies</option>
+      <option>Delta_Logistics</option>
+      <option>Epsilon_Group</option>
+      <option>Gamma_Co</option>
+    </select>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">Category</span>
+    <select class="fsel" id="f-category" onchange="applyFilters()">
+      <option value="all">All Categories</option>
+      <option>Electronics</option>
+      <option>MRO</option>
+      <option>Office Supplies</option>
+      <option>Packaging</option>
+      <option>Raw Materials</option>
+    </select>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">Status</span>
+    <select class="fsel" id="f-status" onchange="applyFilters()">
+      <option value="all">All Statuses</option>
+      <option>Delivered</option>
+      <option>Pending</option>
+      <option>Partially Delivered</option>
+      <option>Cancelled</option>
+    </select>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">Year</span>
+    <select class="fsel" id="f-year" onchange="applyFilters()">
+      <option value="all">2022 + 2023</option>
+      <option value="2022">2022</option>
+      <option value="2023">2023</option>
+    </select>
+  </div>
+  <div class="filter-divider"></div>
+  <button class="reset-btn" onclick="resetFilters()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    Reset
+  </button>
+  <span class="filter-count" id="filter-count">777 orders</span>
 </div>
 
-<main>
+<div class="main">
 
-<!-- KPI CARDS -->
-<div class="kpi-grid">
-  <div class="kpi-card gold">
-    <div class="kpi-icon">💰</div>
-    <div class="kpi-label">Total Spend</div>
-    <div class="kpi-value gold" id="kpiSpend">$49.3M</div>
-    <div class="kpi-sub" id="kpiSpendSub">777 purchase orders</div>
-    <div class="kpi-trend up">↑ +8.2% YoY</div>
+  <!-- ALERT -->
+  <div class="alert" id="alert-box">
+    <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div class="alert-text" id="alert-text"><strong>Delta Logistics flagged:</strong> 14.8% defect rate · 61% compliance — below acceptable thresholds. Immediate vendor review recommended.</div>
   </div>
-  <div class="kpi-card green">
-    <div class="kpi-icon">✂️</div>
-    <div class="kpi-label">Cost Savings</div>
-    <div class="kpi-value green" id="kpiSavings">$3.93M</div>
-    <div class="kpi-sub" id="kpiSavingsPct">7.97% of spend</div>
-    <div class="kpi-trend up">↑ Negotiated</div>
-  </div>
-  <div class="kpi-card red">
-    <div class="kpi-icon">⚠️</div>
-    <div class="kpi-label">Avg Defect Rate</div>
-    <div class="kpi-value red" id="kpiDefect">6.5%</div>
-    <div class="kpi-sub">Delivered orders only</div>
-    <div class="kpi-trend down">↑ High Risk</div>
-  </div>
-  <div class="kpi-card blue">
-    <div class="kpi-icon">📋</div>
-    <div class="kpi-label">Compliance Rate</div>
-    <div class="kpi-value blue" id="kpiCompliance">83%</div>
-    <div class="kpi-sub" id="kpiComplianceSub">of all orders</div>
-    <div class="kpi-trend down">↓ 17% non-compliant</div>
-  </div>
-  <div class="kpi-card purple">
-    <div class="kpi-icon">🚚</div>
-    <div class="kpi-label">On-Time Delivery</div>
-    <div class="kpi-value purple" id="kpiOTD">72%</div>
-    <div class="kpi-sub">Within lead time</div>
-    <div class="kpi-trend up">↑ Tracking</div>
-  </div>
-</div>
 
-<!-- INSIGHT BANNERS -->
-<div class="insight-row">
-  <div class="insight-card">
-    <div class="insight-icon warn">🔴</div>
-    <div class="insight-body">
-      <p>Delta_Logistics is highest-risk supplier</p>
-      <span>10.6% defect rate · 61% compliance · 171 POs</span>
+  <!-- KPI CARDS -->
+  <div class="kpi-grid">
+    <div class="kpi-card amber">
+      <div class="kpi-label">Total Spend</div>
+      <div class="kpi-value amber" id="kpi-spend">—</div>
+      <div class="kpi-sub" id="kpi-spend-sub">loading...</div>
+      <div class="kpi-delta a" id="kpi-spend-d"></div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Cost Savings</div>
+      <div class="kpi-value green" id="kpi-savings">—</div>
+      <div class="kpi-sub" id="kpi-savings-sub">vs list price</div>
+      <div class="kpi-delta g" id="kpi-savings-d"></div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Avg Defect Rate</div>
+      <div class="kpi-value red" id="kpi-defect">—</div>
+      <div class="kpi-sub">delivered orders only</div>
+      <div class="kpi-delta r" id="kpi-defect-d"></div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Compliance Rate</div>
+      <div class="kpi-value blue" id="kpi-compliance">—</div>
+      <div class="kpi-sub" id="kpi-compliance-sub">loading...</div>
+      <div class="kpi-delta r" id="kpi-compliance-d"></div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Delivered Orders</div>
+      <div class="kpi-value purple" id="kpi-delivered">—</div>
+      <div class="kpi-sub" id="kpi-delivered-sub">loading...</div>
+      <div class="kpi-delta" id="kpi-delivered-d"></div>
     </div>
   </div>
-  <div class="insight-card">
-    <div class="insight-icon ok">✅</div>
-    <div class="insight-body">
-      <p>Epsilon_Group is top performer</p>
-      <span>2.6% defect rate · 98% compliance · $844K saved</span>
-    </div>
-  </div>
-  <div class="insight-card">
-    <div class="insight-icon info">📈</div>
-    <div class="insight-body">
-      <p>Q1 2023 peak: $3.03M spend in March</p>
-      <span>Highest single month · $290K saved via negotiation</span>
-    </div>
-  </div>
-</div>
 
-<!-- ROW 1: Spend Trend + Category Donut -->
-<div class="section-header"><h2>Spend & Savings Analytics</h2></div>
-<div class="chart-grid">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Monthly Spend vs. Savings</div>
-        <div class="card-subtitle">Jan 2022 – Jan 2024 · all suppliers</div>
-      </div>
-      <span class="card-tag">TREND</span>
+  <!-- SPEND TREND + STATUS -->
+  <div class="section-title">Spend Overview</div>
+  <div class="row-2-1">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Monthly Spend &amp; Savings</div><div class="card-desc">filtered · all selected suppliers</div></div><span class="card-tag">trend</span></div>
+      <div class="card-body"><canvas id="ch-spend" height="115"></canvas></div>
     </div>
-    <canvas id="spendChart" height="120"></canvas>
-  </div>
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Spend by Category</div>
-        <div class="card-subtitle">Total allocation breakdown</div>
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Order Status</div><div class="card-desc">distribution breakdown</div></div><span class="card-tag">ops</span></div>
+      <div class="card-body">
+        <canvas id="ch-status" height="110"></canvas>
+        <div class="status-legend" id="status-legend"></div>
       </div>
-      <span class="card-tag">SPLIT</span>
     </div>
-    <canvas id="categoryChart" height="180"></canvas>
   </div>
-</div>
 
-<!-- ROW 2: Supplier Comparison Bar -->
-<div class="section-header"><h2>Supplier Performance</h2></div>
-<div class="chart-grid-3">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Defect Rate by Supplier</div>
-        <div class="card-subtitle">% defective units · delivered orders</div>
-      </div>
-      <span class="card-tag">QUALITY</span>
+  <!-- SUPPLIER PERFORMANCE -->
+  <div class="section-title">Supplier Performance</div>
+  <div class="row-3">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Defect Rate</div><span class="card-tag">quality</span></div>
+      <div class="card-body"><canvas id="ch-defect" height="160"></canvas></div>
     </div>
-    <canvas id="defectChart" height="180"></canvas>
-  </div>
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Compliance Rate</div>
-        <div class="card-subtitle">Policy adherence by vendor</div>
-      </div>
-      <span class="card-tag">AUDIT</span>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Compliance Rate</div><span class="card-tag">audit</span></div>
+      <div class="card-body"><canvas id="ch-comp" height="160"></canvas></div>
     </div>
-    <canvas id="complianceChart" height="180"></canvas>
-  </div>
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Order Status Mix</div>
-        <div class="card-subtitle">Across all purchase orders</div>
-      </div>
-      <span class="card-tag">OPS</span>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Savings Rate</div><span class="card-tag">cost</span></div>
+      <div class="card-body"><canvas id="ch-savings" height="160"></canvas></div>
     </div>
-    <canvas id="statusChart" height="180"></canvas>
   </div>
-</div>
 
-<!-- ROW 3: Supplier Scorecard + Risk Matrix -->
-<div class="section-header"><h2>Supplier Scorecard & Risk</h2></div>
-<div class="chart-grid">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Supplier Scorecard</div>
-        <div class="card-subtitle">Comprehensive vendor performance overview</div>
+  <!-- SCORECARD + CATEGORY -->
+  <div class="row-2-1">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Supplier Scorecard</div><div class="card-desc">full performance breakdown · filtered</div></div><span class="card-tag">scorecard</span></div>
+      <div class="card-body-0">
+        <table class="tbl">
+          <thead><tr><th>Supplier</th><th>Orders</th><th>Spend</th><th>Savings</th><th>Defect Rate</th><th>Compliance</th><th>Risk</th></tr></thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
       </div>
-      <span class="card-tag">SCORECARD</span>
     </div>
-    <table class="supplier-table" id="supplierTable">
-      <thead>
-        <tr>
-          <th>Supplier</th>
-          <th>Orders</th>
-          <th>Total Spend</th>
-          <th>Savings</th>
-          <th>Defect Rate</th>
-          <th>Compliance</th>
-          <th>Risk</th>
-        </tr>
-      </thead>
-      <tbody id="supplierTableBody"></tbody>
-    </table>
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Spend by Category</div><div class="card-desc">filtered allocation</div></div><span class="card-tag">split</span></div>
+      <div class="card-body"><div class="cat-list" id="cat-list"></div></div>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Risk Matrix</div>
-        <div class="card-subtitle">Defect Rate vs. Compliance Score</div>
+
+  <!-- SPEND BY SUPPLIER + ORDER STATUS STACKED -->
+  <div class="section-title">Spend & Orders</div>
+  <div class="row-2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Spend vs Savings by Supplier</div><span class="card-tag">cost</span></div>
+      <div class="card-body"><canvas id="ch-supspend" height="155"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Order Status by Supplier</div><span class="card-tag">operations</span></div>
+      <div class="card-body"><canvas id="ch-supstatus" height="155"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TRENDS -->
+  <div class="section-title">Price Trends</div>
+  <div class="row-2">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Unit Price vs Negotiated Price</div><div class="card-desc">avg by supplier · filtered</div></div><span class="card-tag">inflation</span></div>
+      <div class="card-body"><canvas id="ch-price" height="155"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Monthly Order Volume</div><div class="card-desc">purchase order count · filtered</div></div><span class="card-tag">volume</span></div>
+      <div class="card-body"><canvas id="ch-vol" height="155"></canvas></div>
+    </div>
+  </div>
+
+  <!-- RISK -->
+  <div class="section-title">Risk Analysis</div>
+  <div class="row-2">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Risk Matrix — Defect × Compliance</div><div class="card-desc">each point = one supplier</div></div><span class="card-tag">scatter</span></div>
+      <div class="card-body"><canvas id="ch-scatter" height="200"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Risk Quadrant</div><div class="card-desc">high defect / low compliance axes</div></div><span class="card-tag">risk</span></div>
+      <div class="card-body">
+        <div class="rq-wrap">
+          <div class="rq rq-danger"><div class="rq-label">High Defect · Low Compliance</div><div class="rq-title">Critical Risk</div><div class="rq-chips"><span class="rq-chip">Delta</span></div></div>
+          <div class="rq rq-warn"><div class="rq-label">Low Defect · Low Compliance</div><div class="rq-title">Compliance Gap</div><div class="rq-chips"><span style="font-size:10px;color:var(--muted)">— none —</span></div></div>
+          <div class="rq rq-warn"><div class="rq-label">High Defect · High Compliance</div><div class="rq-title">Quality Issue</div><div class="rq-chips"><span class="rq-chip">Beta</span><span class="rq-chip">Gamma</span></div></div>
+          <div class="rq rq-safe"><div class="rq-label">Low Defect · High Compliance</div><div class="rq-title">Preferred Vendor</div><div class="rq-chips"><span class="rq-chip">Alpha</span><span class="rq-chip">Epsilon</span></div></div>
+        </div>
+        <div class="rq-axis"><span>← lower defect rate</span><span>higher defect rate →</span></div>
       </div>
-      <span class="card-tag">RISK</span>
     </div>
-    <canvas id="riskChart" height="200"></canvas>
   </div>
-</div>
 
-<!-- ROW 4: Spend by supplier + Price Inflation -->
-<div class="section-header"><h2>Spend Intelligence</h2></div>
-<div class="chart-grid-2">
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Spend by Supplier</div>
-        <div class="card-subtitle">Total procurement value · all categories</div>
-      </div>
-      <span class="card-tag">ALLOCATION</span>
-    </div>
-    <canvas id="spendSupplierChart" height="150"></canvas>
-  </div>
-  <div class="card">
-    <div class="card-header">
-      <div>
-        <div class="card-title">Price Inflation: Unit vs. Negotiated</div>
-        <div class="card-subtitle">Avg unit price vs. negotiated price over time</div>
-      </div>
-      <span class="card-tag">INFLATION</span>
-    </div>
-    <canvas id="inflationChart" height="150"></canvas>
-  </div>
-</div>
-
-</main>
-
-<footer>
-  Procurement Intelligence Dashboard · 777 Purchase Orders · 2022–2023 · Built with Chart.js
-</footer>
-
-</div>
+</div><!-- /main -->
 
 <script>
-// ── RAW DATA ──
-const RAW = [
-  // Format: [Supplier, Order_Date, Delivery_Date, Category, Status, Qty, UnitPrice, NegPrice, Defects, Compliance]
-];
+const RAW = [{"s":"Alpha_Inc","mo":"2023-10","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":20.13,"n":17.81,"d":0,"q":1176.0,"sp":23672.88,"sv":2728.32,"co":1},{"s":"Delta_Logistics","mo":"2022-04","yr":"2022","ca":"Office Supplies","st":"Delivered","u":39.32,"n":37.34,"d":235.0,"q":1509.0,"sp":59333.88,"sv":2987.82,"co":1},{"s":"Gamma_Co","mo":"2022-01","yr":"2022","ca":"MRO","st":"Delivered","u":95.51,"n":92.26,"d":41.0,"q":910.0,"sp":86914.1,"sv":2957.5,"co":1},{"s":"Beta_Supplies","mo":"2022-10","yr":"2022","ca":"Packaging","st":"Delivered","u":99.85,"n":95.52,"d":112.0,"q":1344.0,"sp":134198.4,"sv":5819.52,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Raw Materials","st":"Delivered","u":64.07,"n":60.53,"d":171.0,"q":1180.0,"sp":75602.6,"sv":4177.2,"co":0},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"MRO","st":"Delivered","u":69.21,"n":63.57,"d":39.0,"q":1145.0,"sp":79245.45,"sv":6457.8,"co":1},{"s":"Gamma_Co","mo":"2022-05","yr":"2022","ca":"MRO","st":"Delivered","u":51.37,"n":47.82,"d":96.0,"q":1774.0,"sp":91130.38,"sv":6297.7,"co":0},{"s":"Alpha_Inc","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":36.93,"n":32.78,"d":22.0,"q":1094.0,"sp":40401.42,"sv":4540.1,"co":1},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"Raw Materials","st":"Partially Delivered","u":43.93,"n":39.89,"d":89.0,"q":1688.0,"sp":74153.84,"sv":6819.52,"co":1},{"s":"Gamma_Co","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Pending","u":76.87,"n":70.2,"d":8.0,"q":171.0,"sp":13144.77,"sv":1140.57,"co":1},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":78.49,"n":73.68,"d":18.0,"q":5000.0,"sp":392450.0,"sv":24050.0,"co":1},{"s":"Beta_Supplies","mo":"2023-08","yr":"2023","ca":"Raw Materials","st":"Delivered","u":88.96,"n":86.58,"d":115.0,"q":5000.0,"sp":444800.0,"sv":11900.0,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Pending","u":86.74,"n":74.86,"d":51.0,"q":5000.0,"sp":433700.0,"sv":59400.0,"co":1},{"s":"Beta_Supplies","mo":"2022-02","yr":"2022","ca":"MRO","st":"Delivered","u":18.3,"n":16.88,"d":0,"q":5000.0,"sp":91500.0,"sv":7100.0,"co":1},{"s":"Delta_Logistics","mo":"2022-01","yr":"2022","ca":"Electronics","st":"Pending","u":54.5,"n":48.45,"d":22.0,"q":5000.0,"sp":272500.0,"sv":30250.0,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Packaging","st":"Delivered","u":15.41,"n":15.12,"d":0,"q":5000.0,"sp":77050.0,"sv":1450.0,"co":1},{"s":"Delta_Logistics","mo":"2022-08","yr":"2022","ca":"MRO","st":"Delivered","u":61.54,"n":55.49,"d":172.0,"q":1173.0,"sp":72186.42,"sv":7096.65,"co":0},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Delivered","u":51.48,"n":50.61,"d":0,"q":921.0,"sp":47413.08,"sv":801.27,"co":1},{"s":"Gamma_Co","mo":"2023-06","yr":"2023","ca":"Raw Materials","st":"Partially Delivered","u":97.53,"n":87.37,"d":79.0,"q":1737.0,"sp":169409.61,"sv":17647.92,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"Raw Materials","st":"Delivered","u":45.74,"n":38.89,"d":0,"q":180.0,"sp":8233.2,"sv":1233.0,"co":0},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"Electronics","st":"Cancelled","u":20.54,"n":19.69,"d":49.0,"q":1735.0,"sp":35636.9,"sv":1474.75,"co":1},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Delivered","u":24.93,"n":23.75,"d":0,"q":1382.0,"sp":34453.26,"sv":1630.76,"co":1},{"s":"Epsilon_Group","mo":"2022-07","yr":"2022","ca":"MRO","st":"Delivered","u":80.89,"n":77.03,"d":29.0,"q":819.0,"sp":66248.91,"sv":3161.34,"co":1},{"s":"Beta_Supplies","mo":"2023-10","yr":"2023","ca":"Office Supplies","st":"Partially Delivered","u":72.53,"n":66.31,"d":42.0,"q":393.0,"sp":28504.29,"sv":2444.46,"co":0},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"MRO","st":"Delivered","u":21.3,"n":20.09,"d":161.0,"q":1565.0,"sp":33334.5,"sv":1893.65,"co":1},{"s":"Epsilon_Group","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Delivered","u":19.15,"n":17.24,"d":0,"q":1487.0,"sp":28476.05,"sv":2840.17,"co":1},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"MRO","st":"Delivered","u":78.2,"n":67.16,"d":17.0,"q":855.0,"sp":66861.0,"sv":9439.2,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Delivered","u":17.13,"n":15.84,"d":8.0,"q":435.0,"sp":7451.55,"sv":561.15,"co":1},{"s":"Delta_Logistics","mo":"2023-04","yr":"2023","ca":"MRO","st":"Delivered","u":90.26,"n":79.47,"d":187.0,"q":1265.0,"sp":114178.9,"sv":13649.35,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"MRO","st":"Delivered","u":80.55,"n":73.31,"d":30.0,"q":1005.0,"sp":80952.75,"sv":7276.2,"co":1},{"s":"Gamma_Co","mo":"2022-10","yr":"2022","ca":"Electronics","st":"Delivered","u":18.1,"n":15.92,"d":0,"q":326.0,"sp":5900.6,"sv":710.68,"co":0},{"s":"Alpha_Inc","mo":"2022-01","yr":"2022","ca":"Office Supplies","st":"Delivered","u":17.64,"n":15.66,"d":26.0,"q":1234.0,"sp":21767.76,"sv":2443.32,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"MRO","st":"Delivered","u":101.27,"n":97.82,"d":19.0,"q":509.0,"sp":51546.43,"sv":1756.05,"co":1},{"s":"Alpha_Inc","mo":"2023-12","yr":"2023","ca":"Packaging","st":"Delivered","u":48.71,"n":43.71,"d":27.0,"q":1387.0,"sp":67560.77,"sv":6935.0,"co":1},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"MRO","st":"Delivered","u":46.39,"n":43.18,"d":0.0,"q":71.0,"sp":3293.69,"sv":227.91,"co":1},{"s":"Epsilon_Group","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Delivered","u":87.73,"n":81.52,"d":9.0,"q":302.0,"sp":26494.46,"sv":1875.42,"co":1},{"s":"Epsilon_Group","mo":"2022-10","yr":"2022","ca":"Office Supplies","st":"Pending","u":99.54,"n":91.37,"d":18.0,"q":797.0,"sp":79333.38,"sv":6511.49,"co":1},{"s":"Beta_Supplies","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Pending","u":101.21,"n":90.9,"d":94.0,"q":906.0,"sp":91696.26,"sv":9340.86,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Delivered","u":80.53,"n":76.15,"d":50.0,"q":1634.0,"sp":131586.02,"sv":7156.92,"co":1},{"s":"Epsilon_Group","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Delivered","u":46.28,"n":39.65,"d":14.0,"q":524.0,"sp":24250.72,"sv":3474.12,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":17.78,"n":15.36,"d":96.0,"q":1132.0,"sp":20126.96,"sv":2739.44,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Office Supplies","st":"Delivered","u":81.14,"n":77.87,"d":34.0,"q":560.0,"sp":45438.4,"sv":1831.2,"co":0},{"s":"Gamma_Co","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Delivered","u":63.87,"n":58.4,"d":85.0,"q":1755.0,"sp":112091.85,"sv":9599.85,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":48.9,"n":42.42,"d":48.0,"q":1549.0,"sp":75746.1,"sv":10037.52,"co":1},{"s":"Delta_Logistics","mo":"2023-01","yr":"2023","ca":"MRO","st":"Delivered","u":97.07,"n":94.16,"d":123.0,"q":749.0,"sp":72705.43,"sv":2179.59,"co":1},{"s":"Alpha_Inc","mo":"2022-12","yr":"2022","ca":"Electronics","st":"Delivered","u":21.11,"n":19.25,"d":15.0,"q":1025.0,"sp":21637.75,"sv":1906.5,"co":1},{"s":"Beta_Supplies","mo":"2023-09","yr":"2023","ca":"Raw Materials","st":"Delivered","u":59.77,"n":50.81,"d":191.0,"q":1856.0,"sp":110933.12,"sv":16629.76,"co":1},{"s":"Epsilon_Group","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":11.46,"n":11.28,"d":4.0,"q":239.0,"sp":2738.94,"sv":43.02,"co":1},{"s":"Delta_Logistics","mo":"2022-02","yr":"2022","ca":"Office Supplies","st":"Pending","u":52.44,"n":46.06,"d":167.0,"q":1007.0,"sp":52807.08,"sv":6424.66,"co":1},{"s":"Alpha_Inc","mo":"2023-04","yr":"2023","ca":"MRO","st":"Pending","u":16.2,"n":15.33,"d":18.0,"q":736.0,"sp":11923.2,"sv":640.32,"co":1},{"s":"Epsilon_Group","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Delivered","u":22.56,"n":19.59,"d":0,"q":1007.0,"sp":22717.92,"sv":2990.79,"co":1},{"s":"Delta_Logistics","mo":"2022-05","yr":"2022","ca":"Office Supplies","st":"Delivered","u":20.99,"n":19.75,"d":102.0,"q":612.0,"sp":12845.88,"sv":758.88,"co":1},{"s":"Alpha_Inc","mo":"2023-01","yr":"2023","ca":"MRO","st":"Pending","u":72.53,"n":63.26,"d":48.0,"q":1949.0,"sp":141360.97,"sv":18067.23,"co":0},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"Office Supplies","st":"Cancelled","u":77.92,"n":76.41,"d":262.0,"q":1640.0,"sp":127788.8,"sv":2476.4,"co":0},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Delivered","u":68.13,"n":60.52,"d":136.0,"q":1317.0,"sp":89727.21,"sv":10022.37,"co":1},{"s":"Epsilon_Group","mo":"2022-10","yr":"2022","ca":"Raw Materials","st":"Delivered","u":100.94,"n":95.05,"d":30.0,"q":881.0,"sp":88928.14,"sv":5189.09,"co":1},{"s":"Delta_Logistics","mo":"2023-10","yr":"2023","ca":"Packaging","st":"Delivered","u":48.33,"n":42.77,"d":206.0,"q":1578.0,"sp":76264.74,"sv":8773.68,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"MRO","st":"Delivered","u":39.29,"n":35.44,"d":0,"q":1204.0,"sp":47305.16,"sv":4635.4,"co":1},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"MRO","st":"Pending","u":93.46,"n":91.27,"d":39.0,"q":1558.0,"sp":145610.68,"sv":3412.02,"co":1},{"s":"Alpha_Inc","mo":"2023-08","yr":"2023","ca":"Packaging","st":"Delivered","u":32.99,"n":28.81,"d":35.0,"q":1892.0,"sp":62417.08,"sv":7908.56,"co":1},{"s":"Epsilon_Group","mo":"2022-07","yr":"2022","ca":"Packaging","st":"Delivered","u":99.59,"n":90.18,"d":25.0,"q":696.0,"sp":69314.64,"sv":6549.36,"co":1},{"s":"Delta_Logistics","mo":"2023-12","yr":"2023","ca":"MRO","st":"Partially Delivered","u":12.37,"n":11.04,"d":10.0,"q":70.0,"sp":865.9,"sv":93.1,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":98.26,"n":93.14,"d":49.0,"q":890.0,"sp":87451.4,"sv":4556.8,"co":1},{"s":"Alpha_Inc","mo":"2022-02","yr":"2022","ca":"MRO","st":"Delivered","u":13.95,"n":12.31,"d":5.0,"q":216.0,"sp":3013.2,"sv":354.24,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Delivered","u":100.13,"n":94.3,"d":200.0,"q":1347.0,"sp":134875.11,"sv":7853.01,"co":1},{"s":"Gamma_Co","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Partially Delivered","u":59.51,"n":56.45,"d":25.0,"q":437.0,"sp":26005.87,"sv":1337.22,"co":0},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"Electronics","st":"Delivered","u":103.84,"n":88.28,"d":12.0,"q":650.0,"sp":67496.0,"sv":10114.0,"co":1},{"s":"Beta_Supplies","mo":"2022-03","yr":"2022","ca":"Office Supplies","st":"Delivered","u":16.81,"n":15.41,"d":38.0,"q":365.0,"sp":6135.65,"sv":511.0,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Cancelled","u":61.94,"n":53.8,"d":0,"q":63.0,"sp":3902.22,"sv":512.82,"co":1},{"s":"Alpha_Inc","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":98.7,"n":87.02,"d":9.0,"q":291.0,"sp":28721.7,"sv":3398.88,"co":1},{"s":"Alpha_Inc","mo":"2023-01","yr":"2023","ca":"MRO","st":"Cancelled","u":60.5,"n":57.18,"d":18.0,"q":826.0,"sp":49973.0,"sv":2742.32,"co":1},{"s":"Delta_Logistics","mo":"2022-10","yr":"2022","ca":"Electronics","st":"Pending","u":69.64,"n":59.28,"d":194.0,"q":1419.0,"sp":98819.16,"sv":14700.84,"co":1},{"s":"Gamma_Co","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Delivered","u":78.06,"n":73.95,"d":40.0,"q":614.0,"sp":47928.84,"sv":2523.54,"co":1},{"s":"Alpha_Inc","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Delivered","u":56.25,"n":54.25,"d":19.0,"q":947.0,"sp":53268.75,"sv":1894.0,"co":1},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"Raw Materials","st":"Delivered","u":70.47,"n":69.65,"d":0,"q":1413.0,"sp":99574.11,"sv":1158.66,"co":1},{"s":"Alpha_Inc","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Partially Delivered","u":64.15,"n":58.32,"d":0,"q":141.0,"sp":9045.15,"sv":822.03,"co":1},{"s":"Alpha_Inc","mo":"2023-01","yr":"2023","ca":"Office Supplies","st":"Delivered","u":96.57,"n":83.87,"d":36.0,"q":1440.0,"sp":139060.8,"sv":18288.0,"co":1},{"s":"Delta_Logistics","mo":"2022-12","yr":"2022","ca":"Raw Materials","st":"Delivered","u":14.87,"n":12.79,"d":0,"q":1005.0,"sp":14944.35,"sv":2090.4,"co":0},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"MRO","st":"Delivered","u":36.52,"n":33.0,"d":31.0,"q":1528.0,"sp":55802.56,"sv":5378.56,"co":0},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"MRO","st":"Delivered","u":106.05,"n":100.99,"d":77.0,"q":1501.0,"sp":159181.05,"sv":7595.06,"co":0},{"s":"Delta_Logistics","mo":"2022-10","yr":"2022","ca":"Packaging","st":"Delivered","u":94.18,"n":81.4,"d":0,"q":558.0,"sp":52552.44,"sv":7131.24,"co":0},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"MRO","st":"Delivered","u":56.88,"n":50.84,"d":0,"q":825.0,"sp":46926.0,"sv":4983.0,"co":1},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"Electronics","st":"Cancelled","u":73.38,"n":71.42,"d":9.0,"q":84.0,"sp":6163.92,"sv":164.64,"co":1},{"s":"Delta_Logistics","mo":"2023-10","yr":"2023","ca":"Raw Materials","st":"Delivered","u":38.64,"n":33.59,"d":27.0,"q":255.0,"sp":9853.2,"sv":1287.75,"co":0},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"MRO","st":"Delivered","u":27.2,"n":26.07,"d":58.0,"q":1154.0,"sp":31388.8,"sv":1304.02,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"Office Supplies","st":"Delivered","u":56.91,"n":54.37,"d":262.0,"q":1635.0,"sp":93047.85,"sv":4152.9,"co":0},{"s":"Delta_Logistics","mo":"2023-10","yr":"2023","ca":"Raw Materials","st":"Delivered","u":46.19,"n":40.12,"d":278.0,"q":1945.0,"sp":89839.55,"sv":11806.15,"co":0},{"s":"Delta_Logistics","mo":"2022-06","yr":"2022","ca":"MRO","st":"Partially Delivered","u":64.09,"n":63.39,"d":228.0,"q":1461.0,"sp":93635.49,"sv":1022.7,"co":0},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Delivered","u":18.53,"n":16.12,"d":147.0,"q":1075.0,"sp":19919.75,"sv":2590.75,"co":1},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Delivered","u":101.6,"n":93.91,"d":25.0,"q":1071.0,"sp":108813.6,"sv":8235.99,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"Packaging","st":"Pending","u":101.23,"n":86.17,"d":43.0,"q":1463.0,"sp":148099.49,"sv":22032.78,"co":1},{"s":"Beta_Supplies","mo":"2023-04","yr":"2023","ca":"Raw Materials","st":"Delivered","u":78.3,"n":73.68,"d":69.0,"q":615.0,"sp":48154.5,"sv":2841.3,"co":1},{"s":"Gamma_Co","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Delivered","u":61.74,"n":56.28,"d":0,"q":1179.0,"sp":72791.46,"sv":6437.34,"co":1},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"Electronics","st":"Partially Delivered","u":39.56,"n":37.63,"d":45.0,"q":1845.0,"sp":72988.2,"sv":3560.85,"co":1},{"s":"Beta_Supplies","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Cancelled","u":91.98,"n":86.27,"d":170.0,"q":1895.0,"sp":174302.1,"sv":10820.45,"co":1},{"s":"Epsilon_Group","mo":"2023-12","yr":"2023","ca":"MRO","st":"Partially Delivered","u":79.86,"n":69.57,"d":32.0,"q":1550.0,"sp":123783.0,"sv":15949.5,"co":0},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Delivered","u":26.85,"n":24.37,"d":0,"q":752.0,"sp":20191.2,"sv":1864.96,"co":0},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Electronics","st":"Delivered","u":95.2,"n":90.07,"d":21.0,"q":451.0,"sp":42935.2,"sv":2313.63,"co":1},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"Office Supplies","st":"Delivered","u":93.69,"n":90.92,"d":66.0,"q":779.0,"sp":72984.51,"sv":2157.83,"co":1},{"s":"Beta_Supplies","mo":"2022-11","yr":"2022","ca":"MRO","st":"Pending","u":100.26,"n":86.44,"d":187.0,"q":1629.0,"sp":163323.54,"sv":22512.78,"co":0},{"s":"Alpha_Inc","mo":"2022-02","yr":"2022","ca":"Office Supplies","st":"Delivered","u":75.69,"n":65.4,"d":2.0,"q":211.0,"sp":15970.59,"sv":2171.19,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Delivered","u":67.49,"n":64.48,"d":2.0,"q":251.0,"sp":16939.99,"sv":755.51,"co":1},{"s":"Gamma_Co","mo":"2022-02","yr":"2022","ca":"Raw Materials","st":"Delivered","u":47.88,"n":44.65,"d":69.0,"q":1045.0,"sp":50034.6,"sv":3375.35,"co":1},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"MRO","st":"Delivered","u":98.64,"n":89.15,"d":57.0,"q":319.0,"sp":31466.16,"sv":3027.31,"co":1},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Office Supplies","st":"Partially Delivered","u":93.66,"n":92.24,"d":58.0,"q":1936.0,"sp":181325.76,"sv":2749.12,"co":1},{"s":"Delta_Logistics","mo":"2022-10","yr":"2022","ca":"MRO","st":"Cancelled","u":14.7,"n":13.14,"d":135.0,"q":865.0,"sp":12715.5,"sv":1349.4,"co":0},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"Electronics","st":"Delivered","u":12.5,"n":10.87,"d":44.0,"q":1344.0,"sp":16800.0,"sv":2190.72,"co":1},{"s":"Delta_Logistics","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Pending","u":45.42,"n":40.37,"d":62.0,"q":505.0,"sp":22937.1,"sv":2550.25,"co":1},{"s":"Beta_Supplies","mo":"2023-08","yr":"2023","ca":"Packaging","st":"Delivered","u":90.83,"n":78.28,"d":151.0,"q":1535.0,"sp":139424.05,"sv":19264.25,"co":0},{"s":"Beta_Supplies","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Delivered","u":103.8,"n":96.27,"d":166.0,"q":1800.0,"sp":186840.0,"sv":13554.0,"co":1},{"s":"Delta_Logistics","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Pending","u":24.36,"n":22.75,"d":206.0,"q":1325.0,"sp":32277.0,"sv":2133.25,"co":1},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"Raw Materials","st":"Delivered","u":70.45,"n":65.88,"d":56.0,"q":1066.0,"sp":75099.7,"sv":4871.62,"co":0},{"s":"Beta_Supplies","mo":"2023-05","yr":"2023","ca":"Raw Materials","st":"Delivered","u":47.82,"n":45.86,"d":180.0,"q":1775.0,"sp":84880.5,"sv":3479.0,"co":1},{"s":"Gamma_Co","mo":"2023-02","yr":"2023","ca":"Raw Materials","st":"Partially Delivered","u":103.62,"n":98.09,"d":25.0,"q":345.0,"sp":35748.9,"sv":1907.85,"co":0},{"s":"Beta_Supplies","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Delivered","u":94.8,"n":91.83,"d":0,"q":1798.0,"sp":170450.4,"sv":5340.06,"co":1},{"s":"Alpha_Inc","mo":"2023-04","yr":"2023","ca":"MRO","st":"Delivered","u":91.86,"n":86.55,"d":17.0,"q":769.0,"sp":70640.34,"sv":4083.39,"co":1},{"s":"Alpha_Inc","mo":"2022-05","yr":"2022","ca":"Packaging","st":"Delivered","u":53.23,"n":47.49,"d":39.0,"q":1822.0,"sp":96985.06,"sv":10458.28,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Delivered","u":49.23,"n":45.41,"d":61.0,"q":387.0,"sp":19052.01,"sv":1478.34,"co":1},{"s":"Epsilon_Group","mo":"2022-05","yr":"2022","ca":"MRO","st":"Delivered","u":35.3,"n":32.52,"d":26.0,"q":928.0,"sp":32758.4,"sv":2579.84,"co":1},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":15.68,"n":14.97,"d":27.0,"q":1126.0,"sp":17655.68,"sv":799.46,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Cancelled","u":95.73,"n":85.33,"d":81.0,"q":841.0,"sp":80508.93,"sv":8746.4,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Delivered","u":90.65,"n":77.75,"d":206.0,"q":1995.0,"sp":180846.75,"sv":25735.5,"co":1},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"Raw Materials","st":"Delivered","u":103.97,"n":101.44,"d":6.0,"q":266.0,"sp":27656.02,"sv":672.98,"co":1},{"s":"Alpha_Inc","mo":"2023-08","yr":"2023","ca":"Raw Materials","st":"Cancelled","u":109.17,"n":107.39,"d":14.0,"q":813.0,"sp":88755.21,"sv":1447.14,"co":1},{"s":"Epsilon_Group","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":64.19,"n":59.01,"d":7.0,"q":237.0,"sp":15213.03,"sv":1227.66,"co":1},{"s":"Alpha_Inc","mo":"2023-08","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":86.73,"n":75.09,"d":9.0,"q":429.0,"sp":37207.17,"sv":4993.56,"co":1},{"s":"Delta_Logistics","mo":"2023-02","yr":"2023","ca":"Packaging","st":"Delivered","u":101.21,"n":93.11,"d":78.0,"q":542.0,"sp":54855.82,"sv":4390.2,"co":0},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Delivered","u":91.66,"n":85.53,"d":35.0,"q":1114.0,"sp":102109.24,"sv":6828.82,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"MRO","st":"Delivered","u":33.39,"n":30.85,"d":26.0,"q":1230.0,"sp":41069.7,"sv":3124.2,"co":1},{"s":"Beta_Supplies","mo":"2022-05","yr":"2022","ca":"MRO","st":"Delivered","u":51.56,"n":50.88,"d":5.0,"q":64.0,"sp":3299.84,"sv":43.52,"co":1},{"s":"Alpha_Inc","mo":"2023-06","yr":"2023","ca":"MRO","st":"Delivered","u":23.46,"n":23.18,"d":0,"q":1886.0,"sp":44245.56,"sv":528.08,"co":1},{"s":"Delta_Logistics","mo":"2023-05","yr":"2023","ca":"Office Supplies","st":"Delivered","u":103.53,"n":101.54,"d":14.0,"q":114.0,"sp":11802.42,"sv":226.86,"co":1},{"s":"Delta_Logistics","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Cancelled","u":65.52,"n":56.9,"d":282.0,"q":1930.0,"sp":126453.6,"sv":16636.6,"co":1},{"s":"Beta_Supplies","mo":"2022-02","yr":"2022","ca":"Office Supplies","st":"Pending","u":30.73,"n":29.82,"d":191.0,"q":1912.0,"sp":58755.76,"sv":1739.92,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":71.51,"n":66.47,"d":0,"q":570.0,"sp":40760.7,"sv":2872.8,"co":1},{"s":"Beta_Supplies","mo":"2022-06","yr":"2022","ca":"Raw Materials","st":"Delivered","u":67.27,"n":60.62,"d":0,"q":1417.0,"sp":95321.59,"sv":9423.05,"co":1},{"s":"Alpha_Inc","mo":"2023-10","yr":"2023","ca":"Raw Materials","st":"Delivered","u":46.67,"n":44.13,"d":21.0,"q":1202.0,"sp":56097.34,"sv":3053.08,"co":0},{"s":"Beta_Supplies","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Delivered","u":20.73,"n":19.83,"d":78.0,"q":697.0,"sp":14448.81,"sv":627.3,"co":0},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"MRO","st":"Delivered","u":78.19,"n":76.91,"d":42.0,"q":1545.0,"sp":120803.55,"sv":1977.6,"co":1},{"s":"Gamma_Co","mo":"2023-03","yr":"2023","ca":"MRO","st":"Partially Delivered","u":60.81,"n":58.25,"d":62.0,"q":1136.0,"sp":69080.16,"sv":2908.16,"co":1},{"s":"Beta_Supplies","mo":"2023-09","yr":"2023","ca":"MRO","st":"Delivered","u":87.46,"n":74.55,"d":118.0,"q":1212.0,"sp":106001.52,"sv":15646.92,"co":0},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"MRO","st":"Delivered","u":57.38,"n":49.32,"d":40.0,"q":1572.0,"sp":90201.36,"sv":12670.32,"co":1},{"s":"Gamma_Co","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Delivered","u":91.9,"n":81.49,"d":26.0,"q":642.0,"sp":58999.8,"sv":6683.22,"co":1},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"Office Supplies","st":"Delivered","u":63.25,"n":54.12,"d":16.0,"q":441.0,"sp":27893.25,"sv":4026.33,"co":1},{"s":"Epsilon_Group","mo":"2023-09","yr":"2023","ca":"Office Supplies","st":"Delivered","u":66.53,"n":57.11,"d":0,"q":1748.0,"sp":116294.44,"sv":16466.16,"co":1},{"s":"Gamma_Co","mo":"2023-04","yr":"2023","ca":"Electronics","st":"Pending","u":95.57,"n":91.8,"d":24.0,"q":468.0,"sp":44726.76,"sv":1764.36,"co":1},{"s":"Beta_Supplies","mo":"2023-06","yr":"2023","ca":"Raw Materials","st":"Delivered","u":50.25,"n":46.28,"d":49.0,"q":338.0,"sp":16984.5,"sv":1341.86,"co":0},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":22.94,"n":21.52,"d":26.0,"q":428.0,"sp":9818.32,"sv":607.76,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Delivered","u":13.72,"n":12.62,"d":216.0,"q":1846.0,"sp":25327.12,"sv":2030.6,"co":1},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"Office Supplies","st":"Delivered","u":77.96,"n":70.8,"d":41.0,"q":1563.0,"sp":121851.48,"sv":11191.08,"co":1},{"s":"Beta_Supplies","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Delivered","u":73.07,"n":69.29,"d":30.0,"q":280.0,"sp":20459.6,"sv":1058.4,"co":1},{"s":"Delta_Logistics","mo":"2022-04","yr":"2022","ca":"Raw Materials","st":"Delivered","u":74.47,"n":64.16,"d":0,"q":1067.0,"sp":79459.49,"sv":11000.77,"co":0},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Pending","u":32.38,"n":29.96,"d":7.0,"q":90.0,"sp":2914.2,"sv":217.8,"co":1},{"s":"Gamma_Co","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Delivered","u":24.28,"n":22.73,"d":59.0,"q":1101.0,"sp":26732.28,"sv":1706.55,"co":0},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"Raw Materials","st":"Delivered","u":11.82,"n":10.51,"d":4.0,"q":184.0,"sp":2174.88,"sv":241.04,"co":1},{"s":"Epsilon_Group","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Delivered","u":45.92,"n":41.02,"d":3.0,"q":250.0,"sp":11480.0,"sv":1225.0,"co":1},{"s":"Epsilon_Group","mo":"2022-12","yr":"2022","ca":"Packaging","st":"Cancelled","u":66.56,"n":61.34,"d":61.0,"q":1913.0,"sp":127329.28,"sv":9985.86,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":45.98,"n":40.39,"d":0,"q":829.0,"sp":38117.42,"sv":4634.11,"co":1},{"s":"Delta_Logistics","mo":"2022-10","yr":"2022","ca":"Raw Materials","st":"Delivered","u":51.59,"n":49.69,"d":148.0,"q":979.0,"sp":50506.61,"sv":1860.1,"co":1},{"s":"Epsilon_Group","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Partially Delivered","u":97.77,"n":90.45,"d":31.0,"q":1106.0,"sp":108133.62,"sv":8095.92,"co":1},{"s":"Delta_Logistics","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Pending","u":42.38,"n":38.34,"d":152.0,"q":1121.0,"sp":47507.98,"sv":4528.84,"co":1},{"s":"Alpha_Inc","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Delivered","u":60.48,"n":56.78,"d":10.0,"q":552.0,"sp":33384.96,"sv":2042.4,"co":1},{"s":"Gamma_Co","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Delivered","u":80.53,"n":77.86,"d":26.0,"q":456.0,"sp":36721.68,"sv":1217.52,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Delivered","u":47.52,"n":44.92,"d":0,"q":1647.0,"sp":78265.44,"sv":4282.2,"co":1},{"s":"Epsilon_Group","mo":"2023-05","yr":"2023","ca":"Electronics","st":"Pending","u":71.27,"n":61.24,"d":43.0,"q":1801.0,"sp":128357.27,"sv":18064.03,"co":1},{"s":"Gamma_Co","mo":"2022-07","yr":"2022","ca":"Electronics","st":"Delivered","u":90.24,"n":85.53,"d":0,"q":854.0,"sp":77064.96,"sv":4022.34,"co":1},{"s":"Delta_Logistics","mo":"2023-06","yr":"2023","ca":"Electronics","st":"Delivered","u":103.57,"n":98.62,"d":23.0,"q":148.0,"sp":15328.36,"sv":732.6,"co":0},{"s":"Delta_Logistics","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":23.59,"n":22.85,"d":92.0,"q":733.0,"sp":17291.47,"sv":542.42,"co":1},{"s":"Beta_Supplies","mo":"2023-10","yr":"2023","ca":"Raw Materials","st":"Delivered","u":103.2,"n":88.56,"d":0,"q":1945.0,"sp":200724.0,"sv":28474.8,"co":1},{"s":"Gamma_Co","mo":"2022-11","yr":"2022","ca":"Raw Materials","st":"Delivered","u":57.0,"n":49.14,"d":48.0,"q":775.0,"sp":44175.0,"sv":6091.5,"co":1},{"s":"Delta_Logistics","mo":"2023-10","yr":"2023","ca":"Packaging","st":"Delivered","u":36.73,"n":33.45,"d":235.0,"q":1620.0,"sp":59502.6,"sv":5313.6,"co":0},{"s":"Beta_Supplies","mo":"2023-06","yr":"2023","ca":"Office Supplies","st":"Delivered","u":55.68,"n":50.86,"d":0,"q":1010.0,"sp":56236.8,"sv":4868.2,"co":1},{"s":"Epsilon_Group","mo":"2023-09","yr":"2023","ca":"Office Supplies","st":"Delivered","u":108.02,"n":101.02,"d":51.0,"q":1812.0,"sp":195732.24,"sv":12684.0,"co":1},{"s":"Delta_Logistics","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Delivered","u":55.97,"n":50.0,"d":100.0,"q":662.0,"sp":37052.14,"sv":3952.14,"co":1},{"s":"Beta_Supplies","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Pending","u":40.58,"n":38.71,"d":165.0,"q":1535.0,"sp":62290.3,"sv":2870.45,"co":1},{"s":"Beta_Supplies","mo":"2023-01","yr":"2023","ca":"Raw Materials","st":"Delivered","u":71.03,"n":67.74,"d":70.0,"q":692.0,"sp":49152.76,"sv":2276.68,"co":1},{"s":"Gamma_Co","mo":"2022-06","yr":"2022","ca":"MRO","st":"Delivered","u":32.4,"n":28.08,"d":96.0,"q":1842.0,"sp":59680.8,"sv":7957.44,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":18.34,"n":17.41,"d":102.0,"q":1078.0,"sp":19770.52,"sv":1002.54,"co":1},{"s":"Delta_Logistics","mo":"2023-06","yr":"2023","ca":"Packaging","st":"Delivered","u":23.44,"n":22.23,"d":0,"q":1291.0,"sp":30261.04,"sv":1562.11,"co":1},{"s":"Alpha_Inc","mo":"2022-01","yr":"2022","ca":"Electronics","st":"Delivered","u":21.52,"n":18.79,"d":13.0,"q":552.0,"sp":11879.04,"sv":1506.96,"co":1},{"s":"Epsilon_Group","mo":"2023-09","yr":"2023","ca":"Electronics","st":"Delivered","u":26.04,"n":25.61,"d":28.0,"q":816.0,"sp":21248.64,"sv":350.88,"co":1},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"Packaging","st":"Delivered","u":23.62,"n":21.81,"d":50.0,"q":447.0,"sp":10558.14,"sv":809.07,"co":1},{"s":"Delta_Logistics","mo":"2023-05","yr":"2023","ca":"Packaging","st":"Partially Delivered","u":73.09,"n":70.14,"d":0,"q":920.0,"sp":67242.8,"sv":2714.0,"co":1},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":26.37,"n":25.08,"d":38.0,"q":844.0,"sp":22256.28,"sv":1088.76,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":41.73,"n":36.45,"d":15.0,"q":442.0,"sp":18444.66,"sv":2333.76,"co":1},{"s":"Beta_Supplies","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Cancelled","u":96.15,"n":83.44,"d":26.0,"q":256.0,"sp":24614.4,"sv":3253.76,"co":1},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"MRO","st":"Partially Delivered","u":55.29,"n":53.04,"d":161.0,"q":1088.0,"sp":60155.52,"sv":2448.0,"co":0},{"s":"Beta_Supplies","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":72.88,"n":64.69,"d":187.0,"q":1931.0,"sp":140731.28,"sv":15814.89,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Electronics","st":"Delivered","u":25.76,"n":25.09,"d":74.0,"q":1627.0,"sp":41911.52,"sv":1090.09,"co":1},{"s":"Beta_Supplies","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Delivered","u":28.4,"n":27.21,"d":0,"q":941.0,"sp":26724.4,"sv":1119.79,"co":0},{"s":"Gamma_Co","mo":"2023-08","yr":"2023","ca":"MRO","st":"Delivered","u":14.98,"n":12.79,"d":0,"q":1534.0,"sp":22979.32,"sv":3359.46,"co":1},{"s":"Alpha_Inc","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":25.46,"n":24.52,"d":46.0,"q":1764.0,"sp":44911.44,"sv":1658.16,"co":1},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"Electronics","st":"Delivered","u":35.42,"n":31.46,"d":0,"q":1648.0,"sp":58372.16,"sv":6526.08,"co":0},{"s":"Gamma_Co","mo":"2023-05","yr":"2023","ca":"Packaging","st":"Delivered","u":28.01,"n":24.06,"d":53.0,"q":913.0,"sp":25573.13,"sv":3606.35,"co":1},{"s":"Alpha_Inc","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Cancelled","u":18.16,"n":17.25,"d":17.0,"q":792.0,"sp":14382.72,"sv":720.72,"co":1},{"s":"Epsilon_Group","mo":"2023-06","yr":"2023","ca":"Office Supplies","st":"Partially Delivered","u":22.63,"n":21.06,"d":44.0,"q":1314.0,"sp":29735.82,"sv":2062.98,"co":1},{"s":"Beta_Supplies","mo":"2022-05","yr":"2022","ca":"MRO","st":"Delivered","u":52.5,"n":45.19,"d":70.0,"q":613.0,"sp":32182.5,"sv":4481.03,"co":1},{"s":"Alpha_Inc","mo":"2022-05","yr":"2022","ca":"Office Supplies","st":"Delivered","u":29.14,"n":26.63,"d":24.0,"q":1070.0,"sp":31179.8,"sv":2685.7,"co":1},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"Raw Materials","st":"Partially Delivered","u":47.49,"n":42.76,"d":6.0,"q":145.0,"sp":6886.05,"sv":685.85,"co":1},{"s":"Delta_Logistics","mo":"2023-05","yr":"2023","ca":"Raw Materials","st":"Delivered","u":59.73,"n":54.95,"d":291.0,"q":1973.0,"sp":117847.29,"sv":9430.94,"co":1},{"s":"Epsilon_Group","mo":"2023-07","yr":"2023","ca":"Office Supplies","st":"Delivered","u":78.63,"n":73.08,"d":100.0,"q":1807.0,"sp":142084.41,"sv":10028.85,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"Electronics","st":"Delivered","u":13.88,"n":12.51,"d":100.0,"q":534.0,"sp":7411.92,"sv":731.58,"co":1},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"Electronics","st":"Delivered","u":85.22,"n":75.48,"d":100.0,"q":1480.0,"sp":126125.6,"sv":14415.2,"co":1},{"s":"Alpha_Inc","mo":"2023-06","yr":"2023","ca":"Office Supplies","st":"Delivered","u":72.16,"n":62.38,"d":100.0,"q":280.0,"sp":20204.8,"sv":2738.4,"co":1},{"s":"Beta_Supplies","mo":"2023-09","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":19.09,"n":17.76,"d":100.0,"q":798.0,"sp":15233.82,"sv":1061.34,"co":1},{"s":"Epsilon_Group","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":94.83,"n":90.2,"d":100.0,"q":1728.0,"sp":163866.24,"sv":8000.64,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"MRO","st":"Delivered","u":96.13,"n":84.78,"d":43.0,"q":1244.0,"sp":119585.72,"sv":14119.4,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Office Supplies","st":"Delivered","u":16.89,"n":15.56,"d":46.0,"q":590.0,"sp":9965.1,"sv":784.7,"co":0},{"s":"Delta_Logistics","mo":"2023-12","yr":"2023","ca":"Packaging","st":"Delivered","u":38.93,"n":33.33,"d":152.0,"q":1109.0,"sp":43173.37,"sv":6210.4,"co":1},{"s":"Beta_Supplies","mo":"2022-07","yr":"2022","ca":"MRO","st":"Delivered","u":85.03,"n":82.55,"d":54.0,"q":574.0,"sp":48807.22,"sv":1423.52,"co":1},{"s":"Gamma_Co","mo":"2024-01","yr":"2024","ca":"Office Supplies","st":"Delivered","u":86.62,"n":76.59,"d":65.0,"q":1233.0,"sp":106802.46,"sv":12366.99,"co":1},{"s":"Gamma_Co","mo":"2022-11","yr":"2022","ca":"Packaging","st":"Delivered","u":27.94,"n":25.59,"d":83.0,"q":1912.0,"sp":53421.28,"sv":4493.2,"co":0},{"s":"Alpha_Inc","mo":"2023-02","yr":"2023","ca":"Packaging","st":"Delivered","u":30.72,"n":27.76,"d":46.0,"q":1772.0,"sp":54435.84,"sv":5245.12,"co":0},{"s":"Beta_Supplies","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Delivered","u":48.11,"n":41.9,"d":135.0,"q":1316.0,"sp":63312.76,"sv":8172.36,"co":1},{"s":"Beta_Supplies","mo":"2023-10","yr":"2023","ca":"Office Supplies","st":"Delivered","u":59.24,"n":58.08,"d":0,"q":1159.0,"sp":68659.16,"sv":1344.44,"co":1},{"s":"Alpha_Inc","mo":"2023-01","yr":"2023","ca":"Office Supplies","st":"Delivered","u":69.58,"n":67.5,"d":31.0,"q":1869.0,"sp":130045.02,"sv":3887.52,"co":1},{"s":"Delta_Logistics","mo":"2023-03","yr":"2023","ca":"Packaging","st":"Delivered","u":46.23,"n":42.87,"d":0,"q":627.0,"sp":28986.21,"sv":2106.72,"co":1},{"s":"Beta_Supplies","mo":"2023-06","yr":"2023","ca":"Raw Materials","st":"Pending","u":56.02,"n":54.78,"d":70.0,"q":731.0,"sp":40950.62,"sv":906.44,"co":0},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":83.07,"n":79.22,"d":16.0,"q":606.0,"sp":50340.42,"sv":2333.1,"co":1},{"s":"Beta_Supplies","mo":"2022-05","yr":"2022","ca":"Office Supplies","st":"Delivered","u":13.57,"n":12.33,"d":157.0,"q":1647.0,"sp":22349.79,"sv":2042.28,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"MRO","st":"Delivered","u":34.03,"n":30.46,"d":0,"q":1062.0,"sp":36139.86,"sv":3791.34,"co":1},{"s":"Beta_Supplies","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Delivered","u":76.8,"n":69.76,"d":0,"q":695.0,"sp":53376.0,"sv":4892.8,"co":0},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"MRO","st":"Delivered","u":91.47,"n":86.97,"d":0,"q":845.0,"sp":77292.15,"sv":3802.5,"co":1},{"s":"Gamma_Co","mo":"2022-12","yr":"2022","ca":"MRO","st":"Delivered","u":59.13,"n":52.51,"d":54.0,"q":1101.0,"sp":65102.13,"sv":7288.62,"co":1},{"s":"Gamma_Co","mo":"2022-01","yr":"2022","ca":"Raw Materials","st":"Delivered","u":57.89,"n":49.84,"d":88.0,"q":1693.0,"sp":98007.77,"sv":13628.65,"co":1},{"s":"Delta_Logistics","mo":"2023-08","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":21.51,"n":19.41,"d":250.0,"q":1629.0,"sp":35039.79,"sv":3420.9,"co":0},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Delivered","u":54.79,"n":50.42,"d":0,"q":1413.0,"sp":77418.27,"sv":6174.81,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Packaging","st":"Delivered","u":59.96,"n":58.54,"d":47.0,"q":1871.0,"sp":112185.16,"sv":2656.82,"co":1},{"s":"Gamma_Co","mo":"2023-08","yr":"2023","ca":"Raw Materials","st":"Delivered","u":34.85,"n":30.5,"d":78.0,"q":1404.0,"sp":48929.4,"sv":6107.4,"co":1},{"s":"Gamma_Co","mo":"2022-08","yr":"2022","ca":"Electronics","st":"Delivered","u":35.43,"n":34.11,"d":74.0,"q":1713.0,"sp":60691.59,"sv":2261.16,"co":1},{"s":"Gamma_Co","mo":"2022-01","yr":"2022","ca":"Electronics","st":"Delivered","u":43.96,"n":43.41,"d":74.0,"q":1579.0,"sp":69412.84,"sv":868.45,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Electronics","st":"Delivered","u":11.92,"n":11.72,"d":76.0,"q":1421.0,"sp":16938.32,"sv":284.2,"co":1},{"s":"Epsilon_Group","mo":"2023-12","yr":"2023","ca":"MRO","st":"Delivered","u":43.47,"n":37.37,"d":53.0,"q":1546.0,"sp":67204.62,"sv":9430.6,"co":1},{"s":"Delta_Logistics","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Delivered","u":32.08,"n":29.36,"d":0,"q":1304.0,"sp":41832.32,"sv":3546.88,"co":1},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":39.87,"n":35.47,"d":32.0,"q":239.0,"sp":9528.93,"sv":1051.6,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Delivered","u":21.51,"n":20.83,"d":0,"q":1298.0,"sp":27919.98,"sv":882.64,"co":1},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"MRO","st":"Delivered","u":91.05,"n":81.56,"d":220.0,"q":1458.0,"sp":132750.9,"sv":13836.42,"co":1},{"s":"Gamma_Co","mo":"2022-02","yr":"2022","ca":"MRO","st":"Delivered","u":63.74,"n":59.11,"d":71.0,"q":1450.0,"sp":92423.0,"sv":6713.5,"co":1},{"s":"Beta_Supplies","mo":"2022-12","yr":"2022","ca":"Electronics","st":"Delivered","u":75.03,"n":63.86,"d":131.0,"q":1356.0,"sp":101740.68,"sv":15146.52,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Delivered","u":81.84,"n":71.86,"d":40.0,"q":682.0,"sp":55814.88,"sv":6806.36,"co":1},{"s":"Gamma_Co","mo":"2023-06","yr":"2023","ca":"Packaging","st":"Delivered","u":59.52,"n":55.29,"d":39.0,"q":677.0,"sp":40295.04,"sv":2863.71,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":18.54,"n":16.55,"d":150.0,"q":1022.0,"sp":18947.88,"sv":2033.78,"co":1},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"Raw Materials","st":"Delivered","u":60.96,"n":57.13,"d":41.0,"q":1818.0,"sp":110825.28,"sv":6962.94,"co":1},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Delivered","u":69.73,"n":63.8,"d":41.0,"q":1332.0,"sp":92880.36,"sv":7898.76,"co":1},{"s":"Beta_Supplies","mo":"2023-05","yr":"2023","ca":"Raw Materials","st":"Delivered","u":83.26,"n":77.67,"d":174.0,"q":1432.0,"sp":119228.32,"sv":8004.88,"co":1},{"s":"Beta_Supplies","mo":"2022-08","yr":"2022","ca":"Packaging","st":"Pending","u":50.56,"n":46.47,"d":63.0,"q":759.0,"sp":38375.04,"sv":3104.31,"co":0},{"s":"Alpha_Inc","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Delivered","u":23.42,"n":22.44,"d":30.0,"q":1529.0,"sp":35809.18,"sv":1498.42,"co":1},{"s":"Gamma_Co","mo":"2022-05","yr":"2022","ca":"Electronics","st":"Delivered","u":36.25,"n":31.8,"d":61.0,"q":1484.0,"sp":53795.0,"sv":6603.8,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"Packaging","st":"Delivered","u":46.73,"n":45.61,"d":15.0,"q":698.0,"sp":32617.54,"sv":781.76,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"Packaging","st":"Pending","u":74.61,"n":71.36,"d":13.0,"q":367.0,"sp":27381.87,"sv":1192.75,"co":1},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Partially Delivered","u":65.97,"n":58.34,"d":50.0,"q":1750.0,"sp":115447.5,"sv":13352.5,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Partially Delivered","u":43.73,"n":37.21,"d":0,"q":1298.0,"sp":56761.54,"sv":8462.96,"co":0},{"s":"Gamma_Co","mo":"2023-04","yr":"2023","ca":"Packaging","st":"Delivered","u":106.2,"n":96.37,"d":93.0,"q":1892.0,"sp":200930.4,"sv":18598.36,"co":1},{"s":"Beta_Supplies","mo":"2023-02","yr":"2023","ca":"Electronics","st":"Delivered","u":68.71,"n":60.64,"d":141.0,"q":1307.0,"sp":89803.97,"sv":10547.49,"co":1},{"s":"Beta_Supplies","mo":"2022-07","yr":"2022","ca":"Electronics","st":"Delivered","u":32.29,"n":29.01,"d":78.0,"q":733.0,"sp":23668.57,"sv":2404.24,"co":1},{"s":"Gamma_Co","mo":"2022-04","yr":"2022","ca":"Packaging","st":"Delivered","u":19.45,"n":18.82,"d":31.0,"q":713.0,"sp":13867.85,"sv":449.19,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Packaging","st":"Delivered","u":24.11,"n":23.45,"d":188.0,"q":1900.0,"sp":45809.0,"sv":1254.0,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"MRO","st":"Cancelled","u":35.67,"n":35.07,"d":224.0,"q":1447.0,"sp":51614.49,"sv":868.2,"co":0},{"s":"Epsilon_Group","mo":"2023-03","yr":"2023","ca":"Office Supplies","st":"Delivered","u":26.17,"n":22.25,"d":55.0,"q":1745.0,"sp":45666.65,"sv":6840.4,"co":1},{"s":"Beta_Supplies","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Delivered","u":28.26,"n":26.62,"d":143.0,"q":1681.0,"sp":47505.06,"sv":2756.84,"co":1},{"s":"Delta_Logistics","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":38.15,"n":36.96,"d":214.0,"q":1545.0,"sp":58941.75,"sv":1838.55,"co":1},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Raw Materials","st":"Delivered","u":27.27,"n":25.96,"d":39.0,"q":1306.0,"sp":35614.62,"sv":1710.86,"co":1},{"s":"Gamma_Co","mo":"2023-04","yr":"2023","ca":"Raw Materials","st":"Delivered","u":97.51,"n":84.3,"d":65.0,"q":1765.0,"sp":172105.15,"sv":23315.65,"co":1},{"s":"Gamma_Co","mo":"2022-02","yr":"2022","ca":"Packaging","st":"Cancelled","u":17.31,"n":16.0,"d":64.0,"q":1186.0,"sp":20529.66,"sv":1553.66,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Delivered","u":63.5,"n":56.09,"d":254.0,"q":1903.0,"sp":120840.5,"sv":14101.23,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"MRO","st":"Delivered","u":52.1,"n":47.87,"d":0,"q":1570.0,"sp":81797.0,"sv":6641.1,"co":0},{"s":"Delta_Logistics","mo":"2023-10","yr":"2023","ca":"MRO","st":"Delivered","u":108.75,"n":93.35,"d":0,"q":491.0,"sp":53396.25,"sv":7561.4,"co":0},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Partially Delivered","u":20.38,"n":20.17,"d":58.0,"q":613.0,"sp":12492.94,"sv":128.73,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Partially Delivered","u":46.27,"n":43.94,"d":63.0,"q":1341.0,"sp":62048.07,"sv":3124.53,"co":1},{"s":"Beta_Supplies","mo":"2023-02","yr":"2023","ca":"MRO","st":"Partially Delivered","u":103.57,"n":89.38,"d":164.0,"q":1583.0,"sp":163951.31,"sv":22462.77,"co":1},{"s":"Beta_Supplies","mo":"2022-12","yr":"2022","ca":"Raw Materials","st":"Cancelled","u":92.73,"n":90.78,"d":173.0,"q":1880.0,"sp":174332.4,"sv":3666.0,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":84.79,"n":82.72,"d":47.0,"q":1459.0,"sp":123708.61,"sv":3020.13,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":34.54,"n":31.87,"d":208.0,"q":1460.0,"sp":50428.4,"sv":3898.2,"co":0},{"s":"Beta_Supplies","mo":"2022-07","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":26.14,"n":24.78,"d":112.0,"q":1186.0,"sp":31002.04,"sv":1612.96,"co":1},{"s":"Epsilon_Group","mo":"2022-07","yr":"2022","ca":"MRO","st":"Pending","u":72.28,"n":65.21,"d":53.0,"q":1686.0,"sp":121864.08,"sv":11920.02,"co":1},{"s":"Alpha_Inc","mo":"2023-07","yr":"2023","ca":"MRO","st":"Delivered","u":102.07,"n":100.69,"d":28.0,"q":1698.0,"sp":173314.86,"sv":2343.24,"co":1},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Electronics","st":"Delivered","u":64.62,"n":55.7,"d":32.0,"q":1001.0,"sp":64684.62,"sv":8928.92,"co":1},{"s":"Alpha_Inc","mo":"2022-05","yr":"2022","ca":"Office Supplies","st":"Delivered","u":62.67,"n":54.11,"d":25.0,"q":1154.0,"sp":72321.18,"sv":9878.24,"co":1},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"Packaging","st":"Cancelled","u":37.66,"n":32.71,"d":0,"q":748.0,"sp":28169.68,"sv":3702.6,"co":0},{"s":"Alpha_Inc","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Delivered","u":81.63,"n":78.76,"d":2.0,"q":162.0,"sp":13224.06,"sv":464.94,"co":1},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"Packaging","st":"Delivered","u":28.04,"n":24.13,"d":0.0,"q":51.0,"sp":1430.04,"sv":199.41,"co":1},{"s":"Delta_Logistics","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Delivered","u":42.07,"n":39.1,"d":106.0,"q":691.0,"sp":29070.37,"sv":2052.27,"co":1},{"s":"Beta_Supplies","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":50.22,"n":45.75,"d":32.0,"q":269.0,"sp":13509.18,"sv":1202.43,"co":0},{"s":"Beta_Supplies","mo":"2022-03","yr":"2022","ca":"Electronics","st":"Pending","u":56.24,"n":55.4,"d":147.0,"q":1639.0,"sp":92177.36,"sv":1376.76,"co":1},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Delivered","u":34.04,"n":30.06,"d":26.0,"q":904.0,"sp":30772.16,"sv":3597.92,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Office Supplies","st":"Delivered","u":22.17,"n":19.65,"d":0,"q":1809.0,"sp":40105.53,"sv":4558.68,"co":1},{"s":"Alpha_Inc","mo":"2022-04","yr":"2022","ca":"Packaging","st":"Delivered","u":65.93,"n":58.95,"d":0,"q":1298.0,"sp":85577.14,"sv":9060.04,"co":1},{"s":"Beta_Supplies","mo":"2022-02","yr":"2022","ca":"Packaging","st":"Delivered","u":36.16,"n":34.79,"d":41.0,"q":434.0,"sp":15693.44,"sv":594.58,"co":1},{"s":"Epsilon_Group","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Delivered","u":68.85,"n":65.28,"d":43.0,"q":1476.0,"sp":101622.6,"sv":5269.32,"co":1},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Partially Delivered","u":26.04,"n":24.81,"d":290.0,"q":1711.0,"sp":44554.44,"sv":2104.53,"co":1},{"s":"Gamma_Co","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Delivered","u":53.3,"n":47.68,"d":49.0,"q":1203.0,"sp":64119.9,"sv":6760.86,"co":1},{"s":"Alpha_Inc","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":58.8,"n":52.22,"d":0,"q":1126.0,"sp":66208.8,"sv":7409.08,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Packaging","st":"Delivered","u":15.18,"n":13.06,"d":63.0,"q":1757.0,"sp":26671.26,"sv":3724.84,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"MRO","st":"Delivered","u":41.3,"n":36.28,"d":20.0,"q":779.0,"sp":32172.7,"sv":3910.58,"co":1},{"s":"Delta_Logistics","mo":"2023-02","yr":"2023","ca":"Office Supplies","st":"Delivered","u":23.53,"n":22.57,"d":282.0,"q":1745.0,"sp":41059.85,"sv":1675.2,"co":0},{"s":"Delta_Logistics","mo":"2023-05","yr":"2023","ca":"Raw Materials","st":"Delivered","u":16.96,"n":15.8,"d":295.0,"q":1783.0,"sp":30239.68,"sv":2068.28,"co":1},{"s":"Alpha_Inc","mo":"2023-05","yr":"2023","ca":"Office Supplies","st":"Partially Delivered","u":107.02,"n":93.3,"d":0,"q":1489.0,"sp":159352.78,"sv":20429.08,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Delivered","u":40.38,"n":35.25,"d":0,"q":296.0,"sp":11952.48,"sv":1518.48,"co":1},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"MRO","st":"Delivered","u":88.28,"n":80.8,"d":31.0,"q":885.0,"sp":78127.8,"sv":6619.8,"co":1},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Pending","u":33.25,"n":30.15,"d":53.0,"q":1512.0,"sp":50274.0,"sv":4687.2,"co":1},{"s":"Delta_Logistics","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Delivered","u":73.12,"n":67.64,"d":0,"q":252.0,"sp":18426.24,"sv":1380.96,"co":0},{"s":"Alpha_Inc","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Cancelled","u":83.13,"n":81.89,"d":30.0,"q":1257.0,"sp":104494.41,"sv":1558.68,"co":1},{"s":"Alpha_Inc","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Delivered","u":63.61,"n":55.92,"d":4.0,"q":172.0,"sp":10940.92,"sv":1322.68,"co":1},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Packaging","st":"Pending","u":55.85,"n":49.88,"d":9.0,"q":450.0,"sp":25132.5,"sv":2686.5,"co":1},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"Electronics","st":"Delivered","u":48.95,"n":43.42,"d":45.0,"q":816.0,"sp":39943.2,"sv":4512.48,"co":1},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Packaging","st":"Delivered","u":44.5,"n":38.57,"d":7.0,"q":343.0,"sp":15263.5,"sv":2033.99,"co":1},{"s":"Gamma_Co","mo":"2022-10","yr":"2022","ca":"MRO","st":"Delivered","u":97.87,"n":85.35,"d":21.0,"q":329.0,"sp":32199.23,"sv":4119.08,"co":0},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":90.69,"n":85.8,"d":0,"q":1910.0,"sp":173217.9,"sv":9339.9,"co":1},{"s":"Epsilon_Group","mo":"2023-12","yr":"2023","ca":"MRO","st":"Delivered","u":107.99,"n":104.29,"d":29.0,"q":933.0,"sp":100754.67,"sv":3452.1,"co":1},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Delivered","u":23.09,"n":21.88,"d":253.0,"q":1683.0,"sp":38860.47,"sv":2036.43,"co":1},{"s":"Beta_Supplies","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Pending","u":84.11,"n":71.97,"d":0,"q":247.0,"sp":20775.17,"sv":2998.58,"co":1},{"s":"Alpha_Inc","mo":"2023-05","yr":"2023","ca":"MRO","st":"Delivered","u":102.01,"n":98.65,"d":0,"q":1031.0,"sp":105172.31,"sv":3464.16,"co":1},{"s":"Alpha_Inc","mo":"2022-06","yr":"2022","ca":"Packaging","st":"Delivered","u":26.97,"n":24.16,"d":41.0,"q":1980.0,"sp":53400.6,"sv":5563.8,"co":1},{"s":"Epsilon_Group","mo":"2022-07","yr":"2022","ca":"Raw Materials","st":"Delivered","u":16.46,"n":14.2,"d":57.0,"q":1584.0,"sp":26072.64,"sv":3579.84,"co":1},{"s":"Beta_Supplies","mo":"2022-10","yr":"2022","ca":"Office Supplies","st":"Delivered","u":80.15,"n":70.91,"d":0,"q":801.0,"sp":64200.15,"sv":7401.24,"co":1},{"s":"Beta_Supplies","mo":"2022-08","yr":"2022","ca":"Packaging","st":"Delivered","u":63.86,"n":57.46,"d":0,"q":193.0,"sp":12324.98,"sv":1235.2,"co":1},{"s":"Beta_Supplies","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":86.62,"n":79.85,"d":72.0,"q":658.0,"sp":56995.96,"sv":4454.66,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"Electronics","st":"Delivered","u":24.72,"n":23.36,"d":37.0,"q":1274.0,"sp":31493.28,"sv":1732.64,"co":1},{"s":"Epsilon_Group","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Partially Delivered","u":88.92,"n":78.82,"d":31.0,"q":1197.0,"sp":106437.24,"sv":12089.7,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Electronics","st":"Delivered","u":28.43,"n":28.11,"d":11.0,"q":236.0,"sp":6709.48,"sv":75.52,"co":1},{"s":"Gamma_Co","mo":"2022-11","yr":"2022","ca":"Raw Materials","st":"Partially Delivered","u":25.97,"n":22.19,"d":62.0,"q":1399.0,"sp":36332.03,"sv":5288.22,"co":1},{"s":"Gamma_Co","mo":"2022-02","yr":"2022","ca":"Electronics","st":"Delivered","u":24.91,"n":22.58,"d":29.0,"q":513.0,"sp":12778.83,"sv":1195.29,"co":1},{"s":"Delta_Logistics","mo":"2022-02","yr":"2022","ca":"MRO","st":"Delivered","u":83.73,"n":76.47,"d":198.0,"q":1422.0,"sp":119064.06,"sv":10323.72,"co":1},{"s":"Alpha_Inc","mo":"2023-08","yr":"2023","ca":"Office Supplies","st":"Delivered","u":76.51,"n":73.05,"d":0,"q":1844.0,"sp":141084.44,"sv":6380.24,"co":1},{"s":"Gamma_Co","mo":"2023-05","yr":"2023","ca":"Electronics","st":"Delivered","u":61.64,"n":54.55,"d":41.0,"q":709.0,"sp":43702.76,"sv":5026.81,"co":1},{"s":"Delta_Logistics","mo":"2023-05","yr":"2023","ca":"MRO","st":"Delivered","u":45.68,"n":41.78,"d":0,"q":813.0,"sp":37137.84,"sv":3170.7,"co":0},{"s":"Delta_Logistics","mo":"2023-06","yr":"2023","ca":"Office Supplies","st":"Delivered","u":96.51,"n":92.9,"d":146.0,"q":1004.0,"sp":96896.04,"sv":3624.44,"co":0},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"Raw Materials","st":"Delivered","u":46.45,"n":40.39,"d":9.0,"q":452.0,"sp":20995.4,"sv":2739.12,"co":1},{"s":"Beta_Supplies","mo":"2022-02","yr":"2022","ca":"Raw Materials","st":"Pending","u":83.91,"n":71.46,"d":137.0,"q":1419.0,"sp":119068.29,"sv":17666.55,"co":1},{"s":"Beta_Supplies","mo":"2023-06","yr":"2023","ca":"Packaging","st":"Delivered","u":53.73,"n":51.92,"d":167.0,"q":1584.0,"sp":85108.32,"sv":2867.04,"co":0},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"MRO","st":"Pending","u":44.36,"n":43.81,"d":6.0,"q":196.0,"sp":8694.56,"sv":107.8,"co":1},{"s":"Alpha_Inc","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Delivered","u":53.19,"n":46.18,"d":29.0,"q":1221.0,"sp":64944.99,"sv":8559.21,"co":1},{"s":"Alpha_Inc","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Delivered","u":37.5,"n":36.2,"d":0,"q":913.0,"sp":34237.5,"sv":1186.9,"co":1},{"s":"Alpha_Inc","mo":"2023-09","yr":"2023","ca":"Packaging","st":"Delivered","u":85.01,"n":76.69,"d":37.0,"q":1784.0,"sp":151657.84,"sv":14842.88,"co":1},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":55.8,"n":52.35,"d":0,"q":1893.0,"sp":105629.4,"sv":6530.85,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Pending","u":34.3,"n":32.25,"d":84.0,"q":538.0,"sp":18453.4,"sv":1102.9,"co":0},{"s":"Delta_Logistics","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Pending","u":94.15,"n":87.7,"d":149.0,"q":978.0,"sp":92078.7,"sv":6308.1,"co":0},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Raw Materials","st":"Cancelled","u":47.45,"n":42.05,"d":53.0,"q":1713.0,"sp":81281.85,"sv":9250.2,"co":1},{"s":"Delta_Logistics","mo":"2022-05","yr":"2022","ca":"Raw Materials","st":"Pending","u":60.1,"n":57.92,"d":95.0,"q":600.0,"sp":36060.0,"sv":1308.0,"co":0},{"s":"Alpha_Inc","mo":"2023-08","yr":"2023","ca":"Electronics","st":"Pending","u":100.28,"n":85.54,"d":5.0,"q":387.0,"sp":38808.36,"sv":5704.38,"co":1},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"MRO","st":"Pending","u":68.83,"n":59.13,"d":22.0,"q":921.0,"sp":63392.43,"sv":8933.7,"co":1},{"s":"Beta_Supplies","mo":"2023-08","yr":"2023","ca":"MRO","st":"Delivered","u":22.47,"n":21.94,"d":77.0,"q":690.0,"sp":15504.3,"sv":365.7,"co":1},{"s":"Alpha_Inc","mo":"2023-09","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":104.04,"n":94.89,"d":36.0,"q":1852.0,"sp":192682.08,"sv":16945.8,"co":1},{"s":"Delta_Logistics","mo":"2022-02","yr":"2022","ca":"Electronics","st":"Delivered","u":66.83,"n":58.01,"d":74.0,"q":522.0,"sp":34885.26,"sv":4604.04,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"Electronics","st":"Delivered","u":44.16,"n":43.13,"d":21.0,"q":200.0,"sp":8832.0,"sv":206.0,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Delivered","u":22.76,"n":21.99,"d":0,"q":1488.0,"sp":33866.88,"sv":1145.76,"co":1},{"s":"Epsilon_Group","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":87.16,"n":78.13,"d":43.0,"q":1371.0,"sp":119496.36,"sv":12380.13,"co":1},{"s":"Alpha_Inc","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Delivered","u":73.05,"n":62.53,"d":0,"q":1684.0,"sp":123016.2,"sv":17715.68,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"Electronics","st":"Delivered","u":63.52,"n":58.09,"d":0,"q":312.0,"sp":19818.24,"sv":1694.16,"co":1},{"s":"Alpha_Inc","mo":"2023-08","yr":"2023","ca":"Packaging","st":"Cancelled","u":99.04,"n":86.51,"d":39.0,"q":1837.0,"sp":181936.48,"sv":23017.61,"co":1},{"s":"Beta_Supplies","mo":"2023-06","yr":"2023","ca":"MRO","st":"Delivered","u":87.86,"n":81.74,"d":21.0,"q":193.0,"sp":16956.98,"sv":1181.16,"co":1},{"s":"Beta_Supplies","mo":"2022-11","yr":"2022","ca":"Electronics","st":"Delivered","u":24.83,"n":23.96,"d":31.0,"q":395.0,"sp":9807.85,"sv":343.65,"co":1},{"s":"Epsilon_Group","mo":"2022-09","yr":"2022","ca":"Electronics","st":"Cancelled","u":39.58,"n":35.83,"d":25.0,"q":673.0,"sp":26637.34,"sv":2523.75,"co":1},{"s":"Delta_Logistics","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Cancelled","u":33.33,"n":28.47,"d":162.0,"q":1066.0,"sp":35529.78,"sv":5180.76,"co":0},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Delivered","u":85.42,"n":80.78,"d":73.0,"q":1645.0,"sp":140515.9,"sv":7632.8,"co":0},{"s":"Alpha_Inc","mo":"2022-11","yr":"2022","ca":"Electronics","st":"Delivered","u":13.67,"n":11.95,"d":16.0,"q":930.0,"sp":12713.1,"sv":1599.6,"co":1},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":63.74,"n":56.1,"d":0.0,"q":51.0,"sp":3250.74,"sv":389.64,"co":1},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Delivered","u":81.77,"n":71.65,"d":55.0,"q":946.0,"sp":77354.42,"sv":9573.52,"co":1},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Raw Materials","st":"Partially Delivered","u":94.69,"n":84.2,"d":0,"q":1377.0,"sp":130388.13,"sv":14444.73,"co":1},{"s":"Epsilon_Group","mo":"2022-05","yr":"2022","ca":"Packaging","st":"Cancelled","u":41.6,"n":40.51,"d":11.0,"q":303.0,"sp":12604.8,"sv":330.27,"co":1},{"s":"Alpha_Inc","mo":"2023-11","yr":"2023","ca":"Raw Materials","st":"Delivered","u":93.14,"n":79.62,"d":24.0,"q":1725.0,"sp":160666.5,"sv":23322.0,"co":1},{"s":"Beta_Supplies","mo":"2023-10","yr":"2023","ca":"Raw Materials","st":"Cancelled","u":22.05,"n":20.65,"d":50.0,"q":502.0,"sp":11069.1,"sv":702.8,"co":0},{"s":"Gamma_Co","mo":"2022-11","yr":"2022","ca":"Packaging","st":"Delivered","u":90.49,"n":80.03,"d":61.0,"q":1110.0,"sp":100443.9,"sv":11610.6,"co":1},{"s":"Alpha_Inc","mo":"2023-04","yr":"2023","ca":"Packaging","st":"Delivered","u":23.08,"n":20.57,"d":0,"q":1233.0,"sp":28457.64,"sv":3094.83,"co":1},{"s":"Beta_Supplies","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Delivered","u":48.04,"n":43.6,"d":94.0,"q":1064.0,"sp":51114.56,"sv":4724.16,"co":1},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":82.57,"n":76.55,"d":0,"q":58.0,"sp":4789.06,"sv":349.16,"co":1},{"s":"Beta_Supplies","mo":"2022-01","yr":"2022","ca":"MRO","st":"Delivered","u":23.49,"n":20.17,"d":116.0,"q":1306.0,"sp":30677.94,"sv":4335.92,"co":0},{"s":"Delta_Logistics","mo":"2023-04","yr":"2023","ca":"Electronics","st":"Delivered","u":32.93,"n":29.28,"d":0,"q":1172.0,"sp":38593.96,"sv":4277.8,"co":0},{"s":"Alpha_Inc","mo":"2023-09","yr":"2023","ca":"Packaging","st":"Delivered","u":82.5,"n":71.71,"d":24.0,"q":1732.0,"sp":142890.0,"sv":18688.28,"co":1},{"s":"Gamma_Co","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Delivered","u":81.54,"n":71.59,"d":39.0,"q":865.0,"sp":70532.1,"sv":8606.75,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Raw Materials","st":"Delivered","u":68.72,"n":66.92,"d":22.0,"q":257.0,"sp":17661.04,"sv":462.6,"co":1},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Delivered","u":73.18,"n":67.59,"d":31.0,"q":1204.0,"sp":88108.72,"sv":6730.36,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Partially Delivered","u":64.14,"n":60.18,"d":51.0,"q":453.0,"sp":29055.42,"sv":1793.88,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Electronics","st":"Delivered","u":33.81,"n":32.54,"d":3.0,"q":201.0,"sp":6795.81,"sv":255.27,"co":1},{"s":"Delta_Logistics","mo":"2023-06","yr":"2023","ca":"Office Supplies","st":"Delivered","u":44.61,"n":42.88,"d":10.0,"q":103.0,"sp":4594.83,"sv":178.19,"co":1},{"s":"Epsilon_Group","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":27.4,"n":27.09,"d":0,"q":1193.0,"sp":32688.2,"sv":369.83,"co":1},{"s":"Gamma_Co","mo":"2022-05","yr":"2022","ca":"Office Supplies","st":"Partially Delivered","u":93.6,"n":89.81,"d":85.0,"q":1746.0,"sp":163425.6,"sv":6617.34,"co":1},{"s":"Delta_Logistics","mo":"2022-12","yr":"2022","ca":"Electronics","st":"Delivered","u":65.94,"n":59.36,"d":0,"q":1993.0,"sp":131418.42,"sv":13113.94,"co":1},{"s":"Beta_Supplies","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":46.54,"n":43.11,"d":0,"q":677.0,"sp":31507.58,"sv":2322.11,"co":0},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Pending","u":53.64,"n":49.23,"d":18.0,"q":636.0,"sp":34115.04,"sv":2804.76,"co":1},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"Packaging","st":"Delivered","u":100.97,"n":98.73,"d":52.0,"q":1698.0,"sp":171447.06,"sv":3803.52,"co":1},{"s":"Gamma_Co","mo":"2022-10","yr":"2022","ca":"Office Supplies","st":"Delivered","u":24.87,"n":22.89,"d":56.0,"q":1493.0,"sp":37130.91,"sv":2956.14,"co":1},{"s":"Alpha_Inc","mo":"2022-06","yr":"2022","ca":"Packaging","st":"Delivered","u":64.33,"n":58.18,"d":26.0,"q":1495.0,"sp":96173.35,"sv":9194.25,"co":1},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"Packaging","st":"Cancelled","u":59.42,"n":52.0,"d":3.0,"q":153.0,"sp":9091.26,"sv":1135.26,"co":1},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Cancelled","u":70.88,"n":63.41,"d":292.0,"q":1925.0,"sp":136444.0,"sv":14379.75,"co":1},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"Packaging","st":"Delivered","u":12.97,"n":11.42,"d":0,"q":303.0,"sp":3929.91,"sv":469.65,"co":0},{"s":"Alpha_Inc","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Delivered","u":92.92,"n":90.63,"d":0,"q":1300.0,"sp":120796.0,"sv":2977.0,"co":1},{"s":"Gamma_Co","mo":"2023-09","yr":"2023","ca":"Raw Materials","st":"Delivered","u":103.28,"n":99.05,"d":0,"q":1185.0,"sp":122386.8,"sv":5012.55,"co":1},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"Raw Materials","st":"Delivered","u":67.56,"n":57.98,"d":15.0,"q":559.0,"sp":37766.04,"sv":5355.22,"co":1},{"s":"Epsilon_Group","mo":"2023-06","yr":"2023","ca":"Electronics","st":"Pending","u":78.88,"n":78.0,"d":38.0,"q":1546.0,"sp":121948.48,"sv":1360.48,"co":1},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Delivered","u":93.02,"n":85.96,"d":4.0,"q":148.0,"sp":13766.96,"sv":1044.88,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Delivered","u":81.75,"n":78.26,"d":37.0,"q":202.0,"sp":16513.5,"sv":704.98,"co":0},{"s":"Gamma_Co","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Delivered","u":25.86,"n":25.6,"d":78.0,"q":1934.0,"sp":50013.24,"sv":502.84,"co":1},{"s":"Alpha_Inc","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Delivered","u":64.96,"n":64.07,"d":20.0,"q":963.0,"sp":62556.48,"sv":857.07,"co":1},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"MRO","st":"Delivered","u":71.71,"n":61.96,"d":0,"q":1969.0,"sp":141196.99,"sv":19197.75,"co":1},{"s":"Delta_Logistics","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":48.89,"n":46.05,"d":138.0,"q":927.0,"sp":45321.03,"sv":2632.68,"co":1},{"s":"Delta_Logistics","mo":"2022-05","yr":"2022","ca":"Raw Materials","st":"Cancelled","u":77.81,"n":69.04,"d":67.0,"q":387.0,"sp":30112.47,"sv":3393.99,"co":1},{"s":"Beta_Supplies","mo":"2022-09","yr":"2022","ca":"Electronics","st":"Delivered","u":97.86,"n":94.36,"d":176.0,"q":1779.0,"sp":174092.94,"sv":6226.5,"co":1},{"s":"Gamma_Co","mo":"2022-04","yr":"2022","ca":"MRO","st":"Pending","u":94.7,"n":92.66,"d":46.0,"q":871.0,"sp":82483.7,"sv":1776.84,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":51.33,"n":44.03,"d":25.0,"q":1236.0,"sp":63443.88,"sv":9022.8,"co":1},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Delivered","u":22.01,"n":21.78,"d":285.0,"q":1793.0,"sp":39463.93,"sv":412.39,"co":1},{"s":"Delta_Logistics","mo":"2022-06","yr":"2022","ca":"MRO","st":"Delivered","u":101.1,"n":89.04,"d":139.0,"q":1006.0,"sp":101706.6,"sv":12132.36,"co":1},{"s":"Beta_Supplies","mo":"2022-10","yr":"2022","ca":"Electronics","st":"Cancelled","u":89.35,"n":86.54,"d":161.0,"q":1754.0,"sp":156719.9,"sv":4928.74,"co":0},{"s":"Epsilon_Group","mo":"2022-10","yr":"2022","ca":"Electronics","st":"Delivered","u":22.17,"n":21.32,"d":10.0,"q":210.0,"sp":4655.7,"sv":178.5,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"MRO","st":"Delivered","u":102.16,"n":91.91,"d":217.0,"q":1653.0,"sp":168870.48,"sv":16943.25,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"MRO","st":"Partially Delivered","u":91.38,"n":88.41,"d":24.0,"q":850.0,"sp":77673.0,"sv":2524.5,"co":1},{"s":"Epsilon_Group","mo":"2022-12","yr":"2022","ca":"Raw Materials","st":"Delivered","u":59.81,"n":57.92,"d":13.0,"q":447.0,"sp":26735.07,"sv":844.83,"co":1},{"s":"Gamma_Co","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Delivered","u":65.11,"n":56.95,"d":71.0,"q":1350.0,"sp":87898.5,"sv":11016.0,"co":1},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"Office Supplies","st":"Delivered","u":51.19,"n":47.76,"d":83.0,"q":865.0,"sp":44279.35,"sv":2966.95,"co":1},{"s":"Alpha_Inc","mo":"2023-10","yr":"2023","ca":"MRO","st":"Delivered","u":16.5,"n":15.89,"d":57.0,"q":1989.0,"sp":32818.5,"sv":1213.29,"co":1},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":41.77,"n":39.58,"d":32.0,"q":1577.0,"sp":65871.29,"sv":3453.63,"co":1},{"s":"Gamma_Co","mo":"2023-06","yr":"2023","ca":"Packaging","st":"Pending","u":89.25,"n":87.28,"d":108.0,"q":1969.0,"sp":175733.25,"sv":3878.93,"co":0},{"s":"Beta_Supplies","mo":"2023-05","yr":"2023","ca":"Packaging","st":"Partially Delivered","u":11.25,"n":9.61,"d":151.0,"q":1465.0,"sp":16481.25,"sv":2402.6,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Pending","u":41.62,"n":39.46,"d":0,"q":1208.0,"sp":50276.96,"sv":2609.28,"co":1},{"s":"Beta_Supplies","mo":"2022-02","yr":"2022","ca":"Raw Materials","st":"Delivered","u":46.06,"n":45.26,"d":123.0,"q":1268.0,"sp":58404.08,"sv":1014.4,"co":1},{"s":"Delta_Logistics","mo":"2022-04","yr":"2022","ca":"Office Supplies","st":"Delivered","u":59.24,"n":55.03,"d":68.0,"q":450.0,"sp":26658.0,"sv":1894.5,"co":0},{"s":"Gamma_Co","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Partially Delivered","u":102.53,"n":95.23,"d":38.0,"q":689.0,"sp":70643.17,"sv":5029.7,"co":1},{"s":"Gamma_Co","mo":"2023-03","yr":"2023","ca":"MRO","st":"Delivered","u":44.05,"n":38.6,"d":51.0,"q":1106.0,"sp":48719.3,"sv":6027.7,"co":1},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"Office Supplies","st":"Delivered","u":43.08,"n":42.58,"d":21.0,"q":737.0,"sp":31749.96,"sv":368.5,"co":1},{"s":"Alpha_Inc","mo":"2022-02","yr":"2022","ca":"Raw Materials","st":"Delivered","u":76.76,"n":74.72,"d":7.0,"q":509.0,"sp":39070.84,"sv":1038.36,"co":0},{"s":"Alpha_Inc","mo":"2022-01","yr":"2022","ca":"Electronics","st":"Delivered","u":50.7,"n":46.59,"d":27.0,"q":1004.0,"sp":50902.8,"sv":4126.44,"co":1},{"s":"Gamma_Co","mo":"2022-12","yr":"2022","ca":"MRO","st":"Pending","u":31.88,"n":28.48,"d":86.0,"q":1956.0,"sp":62357.28,"sv":6650.4,"co":1},{"s":"Delta_Logistics","mo":"2022-05","yr":"2022","ca":"Electronics","st":"Delivered","u":51.73,"n":47.52,"d":81.0,"q":519.0,"sp":26847.87,"sv":2184.99,"co":0},{"s":"Gamma_Co","mo":"2023-10","yr":"2023","ca":"MRO","st":"Partially Delivered","u":25.06,"n":21.62,"d":84.0,"q":1448.0,"sp":36286.88,"sv":4981.12,"co":1},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Delivered","u":26.91,"n":23.75,"d":53.0,"q":1095.0,"sp":29466.45,"sv":3460.2,"co":1},{"s":"Alpha_Inc","mo":"2022-06","yr":"2022","ca":"MRO","st":"Delivered","u":56.22,"n":49.51,"d":18.0,"q":799.0,"sp":44919.78,"sv":5361.29,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"MRO","st":"Partially Delivered","u":51.04,"n":47.15,"d":160.0,"q":1743.0,"sp":88962.72,"sv":6780.27,"co":1},{"s":"Alpha_Inc","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Delivered","u":100.65,"n":85.56,"d":1.0,"q":87.0,"sp":8756.55,"sv":1312.83,"co":1},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"Raw Materials","st":"Delivered","u":47.52,"n":46.5,"d":28.0,"q":279.0,"sp":13258.08,"sv":284.58,"co":0},{"s":"Delta_Logistics","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Delivered","u":66.61,"n":58.5,"d":237.0,"q":1438.0,"sp":95785.18,"sv":11662.18,"co":1},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Office Supplies","st":"Partially Delivered","u":72.93,"n":63.32,"d":99.0,"q":612.0,"sp":44633.16,"sv":5881.32,"co":1},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Pending","u":11.18,"n":10.63,"d":15.0,"q":487.0,"sp":5444.66,"sv":267.85,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":70.76,"n":69.25,"d":51.0,"q":1849.0,"sp":130835.24,"sv":2791.99,"co":1},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"MRO","st":"Partially Delivered","u":26.28,"n":25.44,"d":47.0,"q":1356.0,"sp":35635.68,"sv":1139.04,"co":1},{"s":"Delta_Logistics","mo":"2023-12","yr":"2023","ca":"Raw Materials","st":"Delivered","u":107.59,"n":96.33,"d":10.0,"q":76.0,"sp":8176.84,"sv":855.76,"co":1},{"s":"Alpha_Inc","mo":"2022-06","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":23.96,"n":20.44,"d":0,"q":275.0,"sp":6589.0,"sv":968.0,"co":1},{"s":"Alpha_Inc","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Delivered","u":51.57,"n":48.07,"d":0,"q":1350.0,"sp":69619.5,"sv":4725.0,"co":1},{"s":"Alpha_Inc","mo":"2022-02","yr":"2022","ca":"MRO","st":"Delivered","u":17.77,"n":17.39,"d":0,"q":847.0,"sp":15051.19,"sv":321.86,"co":1},{"s":"Gamma_Co","mo":"2023-01","yr":"2023","ca":"MRO","st":"Delivered","u":105.7,"n":101.3,"d":94.0,"q":1682.0,"sp":177787.4,"sv":7400.8,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"Electronics","st":"Delivered","u":60.44,"n":58.54,"d":8.0,"q":333.0,"sp":20126.52,"sv":632.7,"co":1},{"s":"Alpha_Inc","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Cancelled","u":69.31,"n":67.26,"d":20.0,"q":928.0,"sp":64319.68,"sv":1902.4,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"MRO","st":"Partially Delivered","u":16.44,"n":16.18,"d":0,"q":1009.0,"sp":16587.96,"sv":262.34,"co":1},{"s":"Epsilon_Group","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Pending","u":82.92,"n":74.82,"d":44.0,"q":1554.0,"sp":128857.68,"sv":12587.4,"co":1},{"s":"Gamma_Co","mo":"2022-05","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":29.47,"n":28.94,"d":27.0,"q":502.0,"sp":14793.94,"sv":266.06,"co":1},{"s":"Delta_Logistics","mo":"2022-02","yr":"2022","ca":"MRO","st":"Delivered","u":91.28,"n":82.64,"d":0,"q":1069.0,"sp":97578.32,"sv":9236.16,"co":1},{"s":"Alpha_Inc","mo":"2022-11","yr":"2022","ca":"MRO","st":"Pending","u":29.89,"n":25.83,"d":41.0,"q":1902.0,"sp":56850.78,"sv":7722.12,"co":1},{"s":"Gamma_Co","mo":"2023-01","yr":"2023","ca":"Raw Materials","st":"Pending","u":28.79,"n":25.69,"d":47.0,"q":865.0,"sp":24903.35,"sv":2681.5,"co":1},{"s":"Delta_Logistics","mo":"2022-02","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":13.36,"n":11.61,"d":0,"q":708.0,"sp":9458.88,"sv":1239.0,"co":0},{"s":"Delta_Logistics","mo":"2023-01","yr":"2023","ca":"Packaging","st":"Delivered","u":55.64,"n":48.52,"d":0,"q":1589.0,"sp":88411.96,"sv":11313.68,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Delivered","u":62.96,"n":61.88,"d":9.0,"q":596.0,"sp":37524.16,"sv":643.68,"co":1},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Delivered","u":17.66,"n":16.97,"d":34.0,"q":1265.0,"sp":22339.9,"sv":872.85,"co":1},{"s":"Beta_Supplies","mo":"2022-09","yr":"2022","ca":"Raw Materials","st":"Delivered","u":82.99,"n":81.7,"d":118.0,"q":1122.0,"sp":93114.78,"sv":1447.38,"co":0},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Delivered","u":56.38,"n":53.05,"d":0,"q":1585.0,"sp":89362.3,"sv":5278.05,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":58.05,"n":50.76,"d":0,"q":66.0,"sp":3831.3,"sv":481.14,"co":1},{"s":"Beta_Supplies","mo":"2022-12","yr":"2022","ca":"MRO","st":"Delivered","u":52.4,"n":51.65,"d":118.0,"q":1245.0,"sp":65238.0,"sv":933.75,"co":0},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Delivered","u":50.21,"n":47.55,"d":0,"q":1293.0,"sp":64921.53,"sv":3439.38,"co":0},{"s":"Beta_Supplies","mo":"2023-02","yr":"2023","ca":"Packaging","st":"Delivered","u":64.29,"n":63.01,"d":25.0,"q":207.0,"sp":13308.03,"sv":264.96,"co":1},{"s":"Beta_Supplies","mo":"2023-09","yr":"2023","ca":"Office Supplies","st":"Delivered","u":26.37,"n":25.32,"d":47.0,"q":526.0,"sp":13870.62,"sv":552.3,"co":1},{"s":"Gamma_Co","mo":"2022-06","yr":"2022","ca":"Electronics","st":"Delivered","u":27.03,"n":23.82,"d":0,"q":1119.0,"sp":30246.57,"sv":3591.99,"co":1},{"s":"Gamma_Co","mo":"2022-08","yr":"2022","ca":"Packaging","st":"Delivered","u":90.63,"n":84.51,"d":77.0,"q":1446.0,"sp":131050.98,"sv":8849.52,"co":1},{"s":"Gamma_Co","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Delivered","u":97.53,"n":85.29,"d":21.0,"q":567.0,"sp":55299.51,"sv":6940.08,"co":1},{"s":"Delta_Logistics","mo":"2022-07","yr":"2022","ca":"MRO","st":"Delivered","u":44.91,"n":40.1,"d":0,"q":148.0,"sp":6646.68,"sv":711.88,"co":0},{"s":"Beta_Supplies","mo":"2023-02","yr":"2023","ca":"MRO","st":"Pending","u":36.6,"n":34.64,"d":195.0,"q":1965.0,"sp":71919.0,"sv":3851.4,"co":1},{"s":"Alpha_Inc","mo":"2022-01","yr":"2022","ca":"Office Supplies","st":"Pending","u":67.96,"n":58.98,"d":0,"q":1818.0,"sp":123551.28,"sv":16325.64,"co":1},{"s":"Beta_Supplies","mo":"2022-07","yr":"2022","ca":"MRO","st":"Delivered","u":48.19,"n":45.88,"d":112.0,"q":1110.0,"sp":53490.9,"sv":2564.1,"co":1},{"s":"Delta_Logistics","mo":"2022-12","yr":"2022","ca":"Raw Materials","st":"Delivered","u":12.96,"n":12.74,"d":48.0,"q":329.0,"sp":4263.84,"sv":72.38,"co":1},{"s":"Gamma_Co","mo":"2023-02","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":25.62,"n":25.18,"d":65.0,"q":1422.0,"sp":36431.64,"sv":625.68,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"Raw Materials","st":"Delivered","u":82.63,"n":74.77,"d":76.0,"q":546.0,"sp":45115.98,"sv":4291.56,"co":0},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Partially Delivered","u":72.08,"n":71.3,"d":20.0,"q":351.0,"sp":25300.08,"sv":273.78,"co":1},{"s":"Delta_Logistics","mo":"2022-10","yr":"2022","ca":"Raw Materials","st":"Partially Delivered","u":13.0,"n":12.81,"d":0,"q":230.0,"sp":2990.0,"sv":43.7,"co":0},{"s":"Alpha_Inc","mo":"2022-06","yr":"2022","ca":"MRO","st":"Delivered","u":30.73,"n":26.26,"d":17.0,"q":656.0,"sp":20158.88,"sv":2932.32,"co":1},{"s":"Gamma_Co","mo":"2023-12","yr":"2023","ca":"MRO","st":"Delivered","u":34.34,"n":32.09,"d":69.0,"q":1172.0,"sp":40246.48,"sv":2637.0,"co":1},{"s":"Gamma_Co","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":71.53,"n":70.02,"d":41.0,"q":749.0,"sp":53575.97,"sv":1130.99,"co":1},{"s":"Beta_Supplies","mo":"2023-01","yr":"2023","ca":"Packaging","st":"Delivered","u":12.48,"n":12.3,"d":88.0,"q":1042.0,"sp":13004.16,"sv":187.56,"co":1},{"s":"Delta_Logistics","mo":"2022-02","yr":"2022","ca":"Raw Materials","st":"Delivered","u":19.47,"n":17.15,"d":0,"q":1189.0,"sp":23149.83,"sv":2758.48,"co":0},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Delivered","u":88.14,"n":81.9,"d":4.0,"q":240.0,"sp":21153.6,"sv":1497.6,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"MRO","st":"Delivered","u":26.98,"n":26.47,"d":9.0,"q":302.0,"sp":8147.96,"sv":154.02,"co":1},{"s":"Beta_Supplies","mo":"2022-07","yr":"2022","ca":"MRO","st":"Pending","u":70.81,"n":61.58,"d":0,"q":1030.0,"sp":72934.3,"sv":9506.9,"co":0},{"s":"Delta_Logistics","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Delivered","u":33.79,"n":32.25,"d":137.0,"q":977.0,"sp":33012.83,"sv":1504.58,"co":1},{"s":"Alpha_Inc","mo":"2022-12","yr":"2022","ca":"Packaging","st":"Delivered","u":19.99,"n":17.66,"d":25.0,"q":1234.0,"sp":24667.66,"sv":2875.22,"co":1},{"s":"Beta_Supplies","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Delivered","u":33.48,"n":33.06,"d":146.0,"q":1329.0,"sp":44494.92,"sv":558.18,"co":1},{"s":"Gamma_Co","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Delivered","u":77.63,"n":67.81,"d":58.0,"q":1396.0,"sp":108371.48,"sv":13708.72,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Delivered","u":90.06,"n":87.71,"d":7.0,"q":177.0,"sp":15940.62,"sv":415.95,"co":1},{"s":"Delta_Logistics","mo":"2022-01","yr":"2022","ca":"Electronics","st":"Delivered","u":84.72,"n":73.06,"d":9.0,"q":67.0,"sp":5676.24,"sv":781.22,"co":1},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Delivered","u":50.78,"n":48.2,"d":96.0,"q":1866.0,"sp":94755.48,"sv":4814.28,"co":1},{"s":"Epsilon_Group","mo":"2022-07","yr":"2022","ca":"MRO","st":"Delivered","u":72.23,"n":67.86,"d":53.0,"q":1808.0,"sp":130591.84,"sv":7900.96,"co":1},{"s":"Delta_Logistics","mo":"2023-02","yr":"2023","ca":"Electronics","st":"Cancelled","u":30.3,"n":29.52,"d":96.0,"q":615.0,"sp":18634.5,"sv":479.7,"co":1},{"s":"Gamma_Co","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Pending","u":38.38,"n":35.02,"d":34.0,"q":619.0,"sp":23757.22,"sv":2079.84,"co":1},{"s":"Delta_Logistics","mo":"2022-10","yr":"2022","ca":"Office Supplies","st":"Delivered","u":94.75,"n":84.06,"d":210.0,"q":1396.0,"sp":132271.0,"sv":14923.24,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"MRO","st":"Delivered","u":11.28,"n":9.98,"d":94.0,"q":1945.0,"sp":21939.6,"sv":2528.5,"co":1},{"s":"Delta_Logistics","mo":"2022-10","yr":"2022","ca":"Packaging","st":"Delivered","u":18.49,"n":15.89,"d":113.0,"q":735.0,"sp":13590.15,"sv":1911.0,"co":0},{"s":"Epsilon_Group","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Pending","u":30.29,"n":26.83,"d":56.0,"q":1865.0,"sp":56490.85,"sv":6452.9,"co":1},{"s":"Beta_Supplies","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Cancelled","u":13.69,"n":11.84,"d":52.0,"q":675.0,"sp":9240.75,"sv":1248.75,"co":1},{"s":"Gamma_Co","mo":"2023-06","yr":"2023","ca":"MRO","st":"Pending","u":28.57,"n":24.29,"d":65.0,"q":1361.0,"sp":38883.77,"sv":5825.08,"co":1},{"s":"Gamma_Co","mo":"2023-02","yr":"2023","ca":"Raw Materials","st":"Delivered","u":66.53,"n":60.15,"d":29.0,"q":903.0,"sp":60076.59,"sv":5761.14,"co":1},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Cancelled","u":53.2,"n":50.68,"d":48.0,"q":1736.0,"sp":92355.2,"sv":4374.72,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"MRO","st":"Delivered","u":98.47,"n":97.06,"d":91.0,"q":1011.0,"sp":99553.17,"sv":1425.51,"co":1},{"s":"Delta_Logistics","mo":"2022-12","yr":"2022","ca":"Electronics","st":"Delivered","u":88.17,"n":85.86,"d":246.0,"q":1712.0,"sp":150947.04,"sv":3954.72,"co":1},{"s":"Gamma_Co","mo":"2022-01","yr":"2022","ca":"Office Supplies","st":"Delivered","u":40.76,"n":37.46,"d":10.0,"q":204.0,"sp":8315.04,"sv":673.2,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Partially Delivered","u":33.85,"n":30.57,"d":34.0,"q":539.0,"sp":18245.15,"sv":1767.92,"co":0},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":45.94,"n":42.56,"d":212.0,"q":1459.0,"sp":67026.46,"sv":4931.42,"co":0},{"s":"Gamma_Co","mo":"2022-07","yr":"2022","ca":"MRO","st":"Delivered","u":65.02,"n":56.19,"d":0,"q":834.0,"sp":54226.68,"sv":7364.22,"co":1},{"s":"Gamma_Co","mo":"2023-08","yr":"2023","ca":"Packaging","st":"Partially Delivered","u":37.37,"n":34.27,"d":60.0,"q":1177.0,"sp":43984.49,"sv":3648.7,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"MRO","st":"Delivered","u":68.82,"n":66.82,"d":211.0,"q":1466.0,"sp":100890.12,"sv":2932.0,"co":1},{"s":"Epsilon_Group","mo":"2022-02","yr":"2022","ca":"Electronics","st":"Delivered","u":47.08,"n":44.31,"d":54.0,"q":1884.0,"sp":88698.72,"sv":5218.68,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":60.58,"n":57.32,"d":31.0,"q":295.0,"sp":17871.1,"sv":961.7,"co":1},{"s":"Gamma_Co","mo":"2023-09","yr":"2023","ca":"Raw Materials","st":"Delivered","u":54.18,"n":47.29,"d":59.0,"q":1249.0,"sp":67670.82,"sv":8605.61,"co":1},{"s":"Delta_Logistics","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Delivered","u":39.06,"n":33.6,"d":184.0,"q":1112.0,"sp":43434.72,"sv":6071.52,"co":0},{"s":"Gamma_Co","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Delivered","u":100.61,"n":97.43,"d":66.0,"q":1550.0,"sp":155945.5,"sv":4929.0,"co":1},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"Electronics","st":"Delivered","u":82.66,"n":73.67,"d":258.0,"q":1755.0,"sp":145068.3,"sv":15777.45,"co":0},{"s":"Gamma_Co","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Delivered","u":24.19,"n":21.64,"d":39.0,"q":808.0,"sp":19545.52,"sv":2060.4,"co":1},{"s":"Alpha_Inc","mo":"2023-09","yr":"2023","ca":"Raw Materials","st":"Partially Delivered","u":96.98,"n":95.35,"d":14.0,"q":587.0,"sp":56927.26,"sv":956.81,"co":1},{"s":"Epsilon_Group","mo":"2023-06","yr":"2023","ca":"MRO","st":"Delivered","u":58.45,"n":50.29,"d":54.0,"q":1940.0,"sp":113393.0,"sv":15830.4,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Office Supplies","st":"Cancelled","u":91.87,"n":80.28,"d":158.0,"q":1891.0,"sp":173726.17,"sv":21916.69,"co":1},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"Packaging","st":"Delivered","u":86.91,"n":78.44,"d":18.0,"q":970.0,"sp":84302.7,"sv":8215.9,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"MRO","st":"Delivered","u":52.85,"n":50.34,"d":16.0,"q":457.0,"sp":24152.45,"sv":1147.07,"co":1},{"s":"Beta_Supplies","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Cancelled","u":12.38,"n":11.47,"d":0,"q":574.0,"sp":7106.12,"sv":522.34,"co":0},{"s":"Epsilon_Group","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":35.55,"n":34.69,"d":24.0,"q":877.0,"sp":31177.35,"sv":754.22,"co":1},{"s":"Alpha_Inc","mo":"2022-02","yr":"2022","ca":"MRO","st":"Delivered","u":59.04,"n":50.95,"d":29.0,"q":1579.0,"sp":93224.16,"sv":12774.11,"co":1},{"s":"Delta_Logistics","mo":"2023-12","yr":"2023","ca":"Raw Materials","st":"Delivered","u":74.72,"n":69.73,"d":0,"q":952.0,"sp":71133.44,"sv":4750.48,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Pending","u":35.53,"n":33.25,"d":187.0,"q":1898.0,"sp":67435.94,"sv":4327.44,"co":1},{"s":"Delta_Logistics","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Delivered","u":22.54,"n":20.68,"d":6.0,"q":85.0,"sp":1915.9,"sv":158.1,"co":1},{"s":"Gamma_Co","mo":"2023-06","yr":"2023","ca":"Packaging","st":"Pending","u":92.38,"n":78.92,"d":34.0,"q":734.0,"sp":67806.92,"sv":9879.64,"co":0},{"s":"Alpha_Inc","mo":"2023-07","yr":"2023","ca":"Office Supplies","st":"Delivered","u":107.47,"n":105.53,"d":0,"q":69.0,"sp":7415.43,"sv":133.86,"co":1},{"s":"Delta_Logistics","mo":"2023-12","yr":"2023","ca":"Packaging","st":"Delivered","u":63.9,"n":55.79,"d":59.0,"q":370.0,"sp":23643.0,"sv":3000.7,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"MRO","st":"Delivered","u":28.25,"n":27.53,"d":271.0,"q":1849.0,"sp":52234.25,"sv":1331.28,"co":1},{"s":"Beta_Supplies","mo":"2022-07","yr":"2022","ca":"Packaging","st":"Delivered","u":35.54,"n":30.99,"d":68.0,"q":561.0,"sp":19937.94,"sv":2552.55,"co":0},{"s":"Gamma_Co","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Delivered","u":12.35,"n":10.67,"d":29.0,"q":449.0,"sp":5545.15,"sv":754.32,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"Office Supplies","st":"Delivered","u":98.75,"n":86.78,"d":59.0,"q":703.0,"sp":69421.25,"sv":8414.91,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Electronics","st":"Delivered","u":20.8,"n":18.23,"d":37.0,"q":1021.0,"sp":21236.8,"sv":2623.97,"co":1},{"s":"Beta_Supplies","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Delivered","u":68.69,"n":65.09,"d":0,"q":1956.0,"sp":134357.64,"sv":7041.6,"co":1},{"s":"Delta_Logistics","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Partially Delivered","u":36.57,"n":34.78,"d":67.0,"q":520.0,"sp":19016.4,"sv":930.8,"co":0},{"s":"Delta_Logistics","mo":"2023-10","yr":"2023","ca":"MRO","st":"Delivered","u":66.16,"n":63.0,"d":179.0,"q":1216.0,"sp":80450.56,"sv":3842.56,"co":0},{"s":"Alpha_Inc","mo":"2022-11","yr":"2022","ca":"Raw Materials","st":"Delivered","u":72.06,"n":63.93,"d":0,"q":1165.0,"sp":83949.9,"sv":9471.45,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Pending","u":93.99,"n":83.6,"d":213.0,"q":1427.0,"sp":134123.73,"sv":14826.53,"co":1},{"s":"Epsilon_Group","mo":"2022-05","yr":"2022","ca":"Electronics","st":"Delivered","u":29.15,"n":25.75,"d":14.0,"q":883.0,"sp":25739.45,"sv":3002.2,"co":1},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":11.54,"n":9.89,"d":284.0,"q":1873.0,"sp":21614.42,"sv":3090.45,"co":0},{"s":"Epsilon_Group","mo":"2023-06","yr":"2023","ca":"Office Supplies","st":"Delivered","u":24.22,"n":22.53,"d":27.0,"q":776.0,"sp":18794.72,"sv":1311.44,"co":1},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"Electronics","st":"Delivered","u":95.55,"n":92.45,"d":149.0,"q":903.0,"sp":86281.65,"sv":2799.3,"co":0},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Delivered","u":98.4,"n":85.76,"d":3.0,"q":100.0,"sp":9840.0,"sv":1264.0,"co":1},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Office Supplies","st":"Delivered","u":67.91,"n":61.15,"d":0,"q":1738.0,"sp":118027.58,"sv":11748.88,"co":1},{"s":"Delta_Logistics","mo":"2022-12","yr":"2022","ca":"Packaging","st":"Delivered","u":67.57,"n":61.48,"d":280.0,"q":1771.0,"sp":119666.47,"sv":10785.39,"co":0},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Electronics","st":"Delivered","u":74.39,"n":66.3,"d":18.0,"q":624.0,"sp":46419.36,"sv":5048.16,"co":0},{"s":"Alpha_Inc","mo":"2023-12","yr":"2023","ca":"Packaging","st":"Partially Delivered","u":28.75,"n":27.1,"d":26.0,"q":1263.0,"sp":36311.25,"sv":2083.95,"co":1},{"s":"Gamma_Co","mo":"2022-10","yr":"2022","ca":"Electronics","st":"Cancelled","u":96.45,"n":90.09,"d":0,"q":1198.0,"sp":115547.1,"sv":7619.28,"co":1},{"s":"Epsilon_Group","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Delivered","u":51.98,"n":45.64,"d":0,"q":199.0,"sp":10344.02,"sv":1261.66,"co":0},{"s":"Epsilon_Group","mo":"2022-05","yr":"2022","ca":"MRO","st":"Pending","u":45.37,"n":38.73,"d":0,"q":363.0,"sp":16469.31,"sv":2410.32,"co":1},{"s":"Alpha_Inc","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Delivered","u":58.4,"n":51.04,"d":0,"q":619.0,"sp":36149.6,"sv":4555.84,"co":1},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"MRO","st":"Delivered","u":15.22,"n":13.56,"d":30.0,"q":1415.0,"sp":21536.3,"sv":2348.9,"co":1},{"s":"Beta_Supplies","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Delivered","u":27.71,"n":23.87,"d":39.0,"q":354.0,"sp":9809.34,"sv":1359.36,"co":0},{"s":"Gamma_Co","mo":"2023-01","yr":"2023","ca":"MRO","st":"Delivered","u":81.01,"n":78.43,"d":78.0,"q":1765.0,"sp":142982.65,"sv":4553.7,"co":1},{"s":"Beta_Supplies","mo":"2023-11","yr":"2023","ca":"MRO","st":"Delivered","u":19.37,"n":17.3,"d":69.0,"q":731.0,"sp":14159.47,"sv":1513.17,"co":0},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"MRO","st":"Delivered","u":65.89,"n":59.67,"d":29.0,"q":887.0,"sp":58444.43,"sv":5517.14,"co":1},{"s":"Alpha_Inc","mo":"2023-09","yr":"2023","ca":"MRO","st":"Delivered","u":35.29,"n":32.41,"d":26.0,"q":1856.0,"sp":65498.24,"sv":5345.28,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"Office Supplies","st":"Delivered","u":49.32,"n":46.49,"d":30.0,"q":1127.0,"sp":55583.64,"sv":3189.41,"co":1},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"Raw Materials","st":"Delivered","u":37.78,"n":32.6,"d":162.0,"q":1052.0,"sp":39744.56,"sv":5449.36,"co":1},{"s":"Gamma_Co","mo":"2023-02","yr":"2023","ca":"Raw Materials","st":"Delivered","u":44.74,"n":41.44,"d":24.0,"q":493.0,"sp":22056.82,"sv":1626.9,"co":0},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"MRO","st":"Partially Delivered","u":81.44,"n":71.33,"d":87.0,"q":662.0,"sp":53913.28,"sv":6692.82,"co":1},{"s":"Alpha_Inc","mo":"2022-01","yr":"2022","ca":"Raw Materials","st":"Delivered","u":36.74,"n":35.78,"d":33.0,"q":1042.0,"sp":38283.08,"sv":1000.32,"co":1},{"s":"Alpha_Inc","mo":"2022-11","yr":"2022","ca":"Raw Materials","st":"Delivered","u":64.03,"n":57.74,"d":1.0,"q":313.0,"sp":20041.39,"sv":1968.77,"co":1},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"Office Supplies","st":"Delivered","u":55.22,"n":50.38,"d":0,"q":1126.0,"sp":62177.72,"sv":5449.84,"co":1},{"s":"Gamma_Co","mo":"2022-08","yr":"2022","ca":"MRO","st":"Delivered","u":72.17,"n":64.0,"d":79.0,"q":1645.0,"sp":118719.65,"sv":13439.65,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"Packaging","st":"Delivered","u":100.92,"n":92.35,"d":104.0,"q":1053.0,"sp":106268.76,"sv":9024.21,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"MRO","st":"Delivered","u":83.14,"n":73.3,"d":62.0,"q":1693.0,"sp":140756.02,"sv":16659.12,"co":1},{"s":"Epsilon_Group","mo":"2023-09","yr":"2023","ca":"Raw Materials","st":"Pending","u":32.28,"n":28.65,"d":3.0,"q":54.0,"sp":1743.12,"sv":196.02,"co":1},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Delivered","u":14.22,"n":12.21,"d":33.0,"q":1176.0,"sp":16722.72,"sv":2363.76,"co":1},{"s":"Epsilon_Group","mo":"2022-11","yr":"2022","ca":"Raw Materials","st":"Delivered","u":35.28,"n":33.7,"d":35.0,"q":1269.0,"sp":44770.32,"sv":2005.02,"co":1},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Raw Materials","st":"Delivered","u":68.32,"n":64.46,"d":19.0,"q":823.0,"sp":56227.36,"sv":3176.78,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":15.65,"n":13.49,"d":94.0,"q":926.0,"sp":14491.9,"sv":2000.16,"co":0},{"s":"Delta_Logistics","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Cancelled","u":58.5,"n":52.54,"d":170.0,"q":1041.0,"sp":60898.5,"sv":6204.36,"co":0},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Pending","u":70.72,"n":65.47,"d":42.0,"q":933.0,"sp":65981.76,"sv":4898.25,"co":1},{"s":"Delta_Logistics","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Delivered","u":41.48,"n":40.9,"d":199.0,"q":1423.0,"sp":59026.04,"sv":825.34,"co":1},{"s":"Delta_Logistics","mo":"2023-06","yr":"2023","ca":"MRO","st":"Delivered","u":86.13,"n":80.32,"d":12.0,"q":96.0,"sp":8268.48,"sv":557.76,"co":0},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"MRO","st":"Delivered","u":21.06,"n":19.53,"d":25.0,"q":916.0,"sp":19290.96,"sv":1401.48,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"Raw Materials","st":"Delivered","u":17.18,"n":16.63,"d":20.0,"q":872.0,"sp":14980.96,"sv":479.6,"co":1},{"s":"Beta_Supplies","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Delivered","u":83.85,"n":80.88,"d":0,"q":985.0,"sp":82592.25,"sv":2925.45,"co":0},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":55.14,"n":50.1,"d":98.0,"q":1893.0,"sp":104380.02,"sv":9540.72,"co":1},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"MRO","st":"Delivered","u":75.19,"n":69.55,"d":19.0,"q":705.0,"sp":53008.95,"sv":3976.2,"co":1},{"s":"Delta_Logistics","mo":"2023-06","yr":"2023","ca":"MRO","st":"Delivered","u":53.31,"n":51.78,"d":0,"q":318.0,"sp":16952.58,"sv":486.54,"co":0},{"s":"Alpha_Inc","mo":"2023-11","yr":"2023","ca":"Office Supplies","st":"Pending","u":35.72,"n":32.74,"d":7.0,"q":419.0,"sp":14966.68,"sv":1248.62,"co":1},{"s":"Gamma_Co","mo":"2023-10","yr":"2023","ca":"MRO","st":"Delivered","u":92.51,"n":90.05,"d":38.0,"q":685.0,"sp":63369.35,"sv":1685.1,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"Office Supplies","st":"Partially Delivered","u":90.14,"n":82.63,"d":194.0,"q":1179.0,"sp":106275.06,"sv":8854.29,"co":1},{"s":"Alpha_Inc","mo":"2022-12","yr":"2022","ca":"Raw Materials","st":"Delivered","u":76.51,"n":65.88,"d":40.0,"q":1743.0,"sp":133356.93,"sv":18528.09,"co":1},{"s":"Alpha_Inc","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":35.01,"n":34.18,"d":40.0,"q":1732.0,"sp":60637.32,"sv":1437.56,"co":1},{"s":"Beta_Supplies","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Delivered","u":65.33,"n":62.06,"d":60.0,"q":706.0,"sp":46122.98,"sv":2308.62,"co":0},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"MRO","st":"Cancelled","u":47.16,"n":43.4,"d":0,"q":169.0,"sp":7970.04,"sv":635.44,"co":1},{"s":"Gamma_Co","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Pending","u":19.15,"n":18.69,"d":0,"q":880.0,"sp":16852.0,"sv":404.8,"co":0},{"s":"Gamma_Co","mo":"2022-08","yr":"2022","ca":"MRO","st":"Delivered","u":95.8,"n":92.17,"d":105.0,"q":1860.0,"sp":178188.0,"sv":6751.8,"co":0},{"s":"Delta_Logistics","mo":"2022-07","yr":"2022","ca":"MRO","st":"Delivered","u":22.98,"n":21.71,"d":246.0,"q":1677.0,"sp":38537.46,"sv":2129.79,"co":1},{"s":"Beta_Supplies","mo":"2022-05","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":97.43,"n":91.28,"d":103.0,"q":1131.0,"sp":110193.33,"sv":6955.65,"co":1},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"Raw Materials","st":"Cancelled","u":50.14,"n":43.46,"d":0,"q":1419.0,"sp":71148.66,"sv":9478.92,"co":1},{"s":"Delta_Logistics","mo":"2022-02","yr":"2022","ca":"Raw Materials","st":"Pending","u":26.8,"n":25.62,"d":115.0,"q":790.0,"sp":21172.0,"sv":932.2,"co":1},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"MRO","st":"Pending","u":61.12,"n":53.43,"d":77.0,"q":1547.0,"sp":94552.64,"sv":11896.43,"co":1},{"s":"Delta_Logistics","mo":"2023-05","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":95.65,"n":94.48,"d":23.0,"q":166.0,"sp":15877.9,"sv":194.22,"co":1},{"s":"Alpha_Inc","mo":"2023-09","yr":"2023","ca":"Electronics","st":"Delivered","u":83.49,"n":82.33,"d":43.0,"q":1903.0,"sp":158881.47,"sv":2207.48,"co":1},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"Office Supplies","st":"Partially Delivered","u":83.42,"n":80.35,"d":153.0,"q":840.0,"sp":70072.8,"sv":2578.8,"co":1},{"s":"Delta_Logistics","mo":"2023-04","yr":"2023","ca":"MRO","st":"Delivered","u":74.49,"n":64.63,"d":161.0,"q":1200.0,"sp":89388.0,"sv":11832.0,"co":1},{"s":"Gamma_Co","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Delivered","u":77.37,"n":70.35,"d":72.0,"q":1466.0,"sp":113424.42,"sv":10291.32,"co":1},{"s":"Alpha_Inc","mo":"2023-10","yr":"2023","ca":"Office Supplies","st":"Delivered","u":95.5,"n":94.39,"d":49.0,"q":1981.0,"sp":189185.5,"sv":2198.91,"co":1},{"s":"Gamma_Co","mo":"2023-08","yr":"2023","ca":"Packaging","st":"Delivered","u":35.55,"n":32.38,"d":0,"q":1062.0,"sp":37754.1,"sv":3366.54,"co":1},{"s":"Alpha_Inc","mo":"2022-07","yr":"2022","ca":"MRO","st":"Delivered","u":55.67,"n":55.09,"d":42.0,"q":1714.0,"sp":95418.38,"sv":994.12,"co":1},{"s":"Alpha_Inc","mo":"2023-12","yr":"2023","ca":"Office Supplies","st":"Delivered","u":33.35,"n":31.28,"d":23.0,"q":1131.0,"sp":37718.85,"sv":2341.17,"co":1},{"s":"Alpha_Inc","mo":"2023-01","yr":"2023","ca":"Office Supplies","st":"Delivered","u":104.82,"n":101.34,"d":0,"q":683.0,"sp":71592.06,"sv":2376.84,"co":1},{"s":"Gamma_Co","mo":"2023-05","yr":"2023","ca":"Packaging","st":"Partially Delivered","u":102.56,"n":90.88,"d":38.0,"q":562.0,"sp":57638.72,"sv":6564.16,"co":1},{"s":"Alpha_Inc","mo":"2023-02","yr":"2023","ca":"Electronics","st":"Delivered","u":14.43,"n":14.11,"d":36.0,"q":1824.0,"sp":26320.32,"sv":583.68,"co":1},{"s":"Beta_Supplies","mo":"2022-09","yr":"2022","ca":"Electronics","st":"Partially Delivered","u":76.44,"n":74.76,"d":91.0,"q":851.0,"sp":65050.44,"sv":1429.68,"co":1},{"s":"Beta_Supplies","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Delivered","u":95.6,"n":82.16,"d":103.0,"q":1169.0,"sp":111756.4,"sv":15711.36,"co":1},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"MRO","st":"Delivered","u":29.14,"n":26.35,"d":48.0,"q":1711.0,"sp":49858.54,"sv":4773.69,"co":1},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"Packaging","st":"Pending","u":68.14,"n":61.71,"d":112.0,"q":1191.0,"sp":81154.74,"sv":7658.13,"co":1},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"Electronics","st":"Delivered","u":92.39,"n":82.75,"d":29.0,"q":609.0,"sp":56265.51,"sv":5870.76,"co":1},{"s":"Beta_Supplies","mo":"2022-04","yr":"2022","ca":"Office Supplies","st":"Delivered","u":13.25,"n":11.77,"d":181.0,"q":1674.0,"sp":22180.5,"sv":2477.52,"co":1},{"s":"Gamma_Co","mo":"2023-03","yr":"2023","ca":"MRO","st":"Delivered","u":77.86,"n":71.18,"d":20.0,"q":537.0,"sp":41810.82,"sv":3587.16,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Electronics","st":"Delivered","u":38.05,"n":37.0,"d":45.0,"q":1310.0,"sp":49845.5,"sv":1375.5,"co":1},{"s":"Delta_Logistics","mo":"2022-06","yr":"2022","ca":"Raw Materials","st":"Delivered","u":95.53,"n":91.72,"d":308.0,"q":1958.0,"sp":187047.74,"sv":7459.98,"co":1},{"s":"Delta_Logistics","mo":"2023-12","yr":"2023","ca":"Office Supplies","st":"Delivered","u":108.6,"n":101.78,"d":146.0,"q":946.0,"sp":102735.6,"sv":6451.72,"co":1},{"s":"Beta_Supplies","mo":"2023-06","yr":"2023","ca":"Packaging","st":"Partially Delivered","u":103.06,"n":95.14,"d":0,"q":1345.0,"sp":138615.7,"sv":10652.4,"co":1},{"s":"Delta_Logistics","mo":"2023-04","yr":"2023","ca":"MRO","st":"Delivered","u":56.63,"n":51.46,"d":0,"q":1262.0,"sp":71467.06,"sv":6524.54,"co":0},{"s":"Beta_Supplies","mo":"2022-02","yr":"2022","ca":"Office Supplies","st":"Pending","u":88.02,"n":79.92,"d":75.0,"q":753.0,"sp":66279.06,"sv":6099.3,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Delivered","u":93.75,"n":81.63,"d":149.0,"q":1520.0,"sp":142500.0,"sv":18422.4,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":40.27,"n":37.54,"d":76.0,"q":630.0,"sp":25370.1,"sv":1719.9,"co":1},{"s":"Delta_Logistics","mo":"2022-05","yr":"2022","ca":"Office Supplies","st":"Delivered","u":86.29,"n":82.51,"d":110.0,"q":839.0,"sp":72397.31,"sv":3171.42,"co":1},{"s":"Alpha_Inc","mo":"2023-04","yr":"2023","ca":"Electronics","st":"Delivered","u":14.33,"n":14.07,"d":27.0,"q":910.0,"sp":13040.3,"sv":236.6,"co":1},{"s":"Epsilon_Group","mo":"2022-05","yr":"2022","ca":"Raw Materials","st":"Delivered","u":64.94,"n":63.61,"d":0,"q":296.0,"sp":19222.24,"sv":393.68,"co":1},{"s":"Beta_Supplies","mo":"2023-04","yr":"2023","ca":"MRO","st":"Delivered","u":33.0,"n":30.65,"d":141.0,"q":1149.0,"sp":37917.0,"sv":2700.15,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Delivered","u":23.14,"n":20.0,"d":0,"q":203.0,"sp":4697.42,"sv":637.42,"co":0},{"s":"Epsilon_Group","mo":"2023-06","yr":"2023","ca":"Office Supplies","st":"Delivered","u":18.36,"n":16.34,"d":47.0,"q":1729.0,"sp":31744.44,"sv":3492.58,"co":1},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Office Supplies","st":"Delivered","u":79.21,"n":73.27,"d":226.0,"q":1508.0,"sp":119448.68,"sv":8957.52,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"Packaging","st":"Partially Delivered","u":44.65,"n":40.1,"d":165.0,"q":1046.0,"sp":46703.9,"sv":4759.3,"co":0},{"s":"Alpha_Inc","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Delivered","u":78.99,"n":71.69,"d":14.0,"q":1159.0,"sp":91549.41,"sv":8460.7,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":16.99,"n":15.35,"d":69.0,"q":746.0,"sp":12674.54,"sv":1223.44,"co":0},{"s":"Beta_Supplies","mo":"2023-09","yr":"2023","ca":"Packaging","st":"Delivered","u":42.21,"n":38.75,"d":128.0,"q":1358.0,"sp":57321.18,"sv":4698.68,"co":1},{"s":"Gamma_Co","mo":"2023-06","yr":"2023","ca":"Office Supplies","st":"Delivered","u":63.53,"n":59.42,"d":79.0,"q":1293.0,"sp":82144.29,"sv":5314.23,"co":1},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":86.85,"n":74.28,"d":30.0,"q":1142.0,"sp":99182.7,"sv":14354.94,"co":1},{"s":"Epsilon_Group","mo":"2023-07","yr":"2023","ca":"MRO","st":"Delivered","u":42.17,"n":37.47,"d":33.0,"q":1120.0,"sp":47230.4,"sv":5264.0,"co":1},{"s":"Alpha_Inc","mo":"2023-04","yr":"2023","ca":"MRO","st":"Delivered","u":71.3,"n":62.04,"d":0,"q":1058.0,"sp":75435.4,"sv":9797.08,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Delivered","u":91.98,"n":86.02,"d":5.0,"q":143.0,"sp":13153.14,"sv":852.28,"co":1},{"s":"Beta_Supplies","mo":"2023-05","yr":"2023","ca":"MRO","st":"Delivered","u":70.66,"n":66.92,"d":202.0,"q":1823.0,"sp":128813.18,"sv":6818.02,"co":1},{"s":"Gamma_Co","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Delivered","u":33.29,"n":28.48,"d":49.0,"q":1007.0,"sp":33523.03,"sv":4843.67,"co":1},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Delivered","u":12.68,"n":12.36,"d":56.0,"q":1061.0,"sp":13453.48,"sv":339.52,"co":0},{"s":"Beta_Supplies","mo":"2022-09","yr":"2022","ca":"MRO","st":"Pending","u":91.84,"n":82.33,"d":0,"q":502.0,"sp":46103.68,"sv":4774.02,"co":1},{"s":"Delta_Logistics","mo":"2023-10","yr":"2023","ca":"Packaging","st":"Delivered","u":13.17,"n":11.63,"d":199.0,"q":1277.0,"sp":16818.09,"sv":1966.58,"co":0},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"Packaging","st":"Delivered","u":92.72,"n":88.49,"d":22.0,"q":961.0,"sp":89103.92,"sv":4065.03,"co":1},{"s":"Gamma_Co","mo":"2023-06","yr":"2023","ca":"Packaging","st":"Delivered","u":62.5,"n":61.18,"d":17.0,"q":267.0,"sp":16687.5,"sv":352.44,"co":1},{"s":"Delta_Logistics","mo":"2023-05","yr":"2023","ca":"Raw Materials","st":"Cancelled","u":102.08,"n":99.59,"d":0,"q":523.0,"sp":53387.84,"sv":1302.27,"co":1},{"s":"Epsilon_Group","mo":"2023-10","yr":"2023","ca":"Electronics","st":"Pending","u":90.49,"n":77.17,"d":0,"q":481.0,"sp":43525.69,"sv":6406.92,"co":1},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":103.81,"n":100.12,"d":20.0,"q":390.0,"sp":40485.9,"sv":1439.1,"co":1},{"s":"Epsilon_Group","mo":"2022-10","yr":"2022","ca":"Packaging","st":"Delivered","u":43.43,"n":38.76,"d":22.0,"q":600.0,"sp":26058.0,"sv":2802.0,"co":1},{"s":"Delta_Logistics","mo":"2023-03","yr":"2023","ca":"Office Supplies","st":"Delivered","u":84.58,"n":75.21,"d":253.0,"q":1685.0,"sp":142517.3,"sv":15788.45,"co":0},{"s":"Epsilon_Group","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Cancelled","u":46.64,"n":42.85,"d":33.0,"q":1362.0,"sp":63523.68,"sv":5161.98,"co":1},{"s":"Delta_Logistics","mo":"2024-01","yr":"2024","ca":"Electronics","st":"Pending","u":59.57,"n":56.44,"d":169.0,"q":1327.0,"sp":79049.39,"sv":4153.51,"co":1},{"s":"Epsilon_Group","mo":"2022-10","yr":"2022","ca":"MRO","st":"Delivered","u":69.47,"n":60.0,"d":50.0,"q":1807.0,"sp":125532.29,"sv":17112.29,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Pending","u":91.73,"n":89.13,"d":0,"q":406.0,"sp":37242.38,"sv":1055.6,"co":1},{"s":"Gamma_Co","mo":"2022-10","yr":"2022","ca":"Raw Materials","st":"Partially Delivered","u":103.0,"n":89.49,"d":1.0,"q":72.0,"sp":7416.0,"sv":972.72,"co":0},{"s":"Gamma_Co","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Delivered","u":83.5,"n":82.36,"d":85.0,"q":1835.0,"sp":153222.5,"sv":2091.9,"co":0},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"Electronics","st":"Pending","u":49.98,"n":45.58,"d":0,"q":571.0,"sp":28538.58,"sv":2512.4,"co":0},{"s":"Epsilon_Group","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Delivered","u":52.24,"n":50.44,"d":60.0,"q":1831.0,"sp":95651.44,"sv":3295.8,"co":1},{"s":"Beta_Supplies","mo":"2022-03","yr":"2022","ca":"Office Supplies","st":"Pending","u":77.15,"n":68.49,"d":170.0,"q":1910.0,"sp":147356.5,"sv":16540.6,"co":1},{"s":"Gamma_Co","mo":"2022-05","yr":"2022","ca":"Electronics","st":"Partially Delivered","u":32.12,"n":29.18,"d":0,"q":1173.0,"sp":37676.76,"sv":3448.62,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":20.44,"n":19.22,"d":22.0,"q":851.0,"sp":17394.44,"sv":1038.22,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"MRO","st":"Cancelled","u":43.38,"n":38.01,"d":34.0,"q":1253.0,"sp":54355.14,"sv":6728.61,"co":1},{"s":"Alpha_Inc","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Delivered","u":38.0,"n":33.42,"d":33.0,"q":1296.0,"sp":49248.0,"sv":5935.68,"co":1},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"Raw Materials","st":"Delivered","u":40.88,"n":39.46,"d":221.0,"q":1979.0,"sp":80901.52,"sv":2810.18,"co":1},{"s":"Gamma_Co","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Delivered","u":31.8,"n":30.33,"d":58.0,"q":811.0,"sp":25789.8,"sv":1192.17,"co":1},{"s":"Alpha_Inc","mo":"2023-12","yr":"2023","ca":"Electronics","st":"Delivered","u":15.37,"n":14.7,"d":38.0,"q":1732.0,"sp":26620.84,"sv":1160.44,"co":1},{"s":"Beta_Supplies","mo":"2022-08","yr":"2022","ca":"Packaging","st":"Delivered","u":12.01,"n":11.67,"d":47.0,"q":491.0,"sp":5896.91,"sv":166.94,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Cancelled","u":99.88,"n":96.38,"d":90.0,"q":1681.0,"sp":167898.28,"sv":5883.5,"co":1},{"s":"Alpha_Inc","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Partially Delivered","u":51.89,"n":47.85,"d":12.0,"q":818.0,"sp":42446.02,"sv":3304.72,"co":1},{"s":"Beta_Supplies","mo":"2023-02","yr":"2023","ca":"Office Supplies","st":"Delivered","u":47.49,"n":41.42,"d":113.0,"q":1065.0,"sp":50576.85,"sv":6464.55,"co":1},{"s":"Gamma_Co","mo":"2022-12","yr":"2022","ca":"Packaging","st":"Delivered","u":75.08,"n":67.09,"d":57.0,"q":1398.0,"sp":104961.84,"sv":11170.02,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Delivered","u":32.31,"n":29.76,"d":60.0,"q":565.0,"sp":18255.15,"sv":1440.75,"co":1},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Packaging","st":"Pending","u":102.66,"n":89.21,"d":33.0,"q":1089.0,"sp":111796.74,"sv":14647.05,"co":1},{"s":"Delta_Logistics","mo":"2023-03","yr":"2023","ca":"Electronics","st":"Delivered","u":86.43,"n":83.77,"d":125.0,"q":841.0,"sp":72687.63,"sv":2237.06,"co":0},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"Electronics","st":"Delivered","u":18.23,"n":17.74,"d":0,"q":385.0,"sp":7018.55,"sv":188.65,"co":1},{"s":"Epsilon_Group","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Delivered","u":49.01,"n":41.86,"d":52.0,"q":1832.0,"sp":89786.32,"sv":13098.8,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Delivered","u":95.36,"n":83.63,"d":29.0,"q":307.0,"sp":29275.52,"sv":3601.11,"co":1},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Office Supplies","st":"Delivered","u":101.2,"n":97.82,"d":21.0,"q":546.0,"sp":55255.2,"sv":1845.48,"co":1},{"s":"Delta_Logistics","mo":"2023-08","yr":"2023","ca":"Raw Materials","st":"Delivered","u":57.01,"n":55.14,"d":147.0,"q":945.0,"sp":53874.45,"sv":1767.15,"co":0},{"s":"Delta_Logistics","mo":"2023-12","yr":"2023","ca":"MRO","st":"Pending","u":72.71,"n":64.34,"d":39.0,"q":209.0,"sp":15196.39,"sv":1749.33,"co":1},{"s":"Beta_Supplies","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Delivered","u":25.03,"n":22.87,"d":0,"q":1548.0,"sp":38746.44,"sv":3343.68,"co":1},{"s":"Delta_Logistics","mo":"2023-08","yr":"2023","ca":"Raw Materials","st":"Delivered","u":108.63,"n":106.3,"d":141.0,"q":901.0,"sp":97875.63,"sv":2099.33,"co":1},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"Packaging","st":"Delivered","u":32.7,"n":31.02,"d":48.0,"q":1737.0,"sp":56799.9,"sv":2918.16,"co":1},{"s":"Beta_Supplies","mo":"2023-05","yr":"2023","ca":"Raw Materials","st":"Delivered","u":102.43,"n":90.99,"d":204.0,"q":1981.0,"sp":202913.83,"sv":22662.64,"co":1},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"MRO","st":"Pending","u":68.47,"n":66.09,"d":19.0,"q":739.0,"sp":50599.33,"sv":1758.82,"co":1},{"s":"Beta_Supplies","mo":"2022-12","yr":"2022","ca":"Raw Materials","st":"Delivered","u":68.25,"n":62.84,"d":171.0,"q":1748.0,"sp":119301.0,"sv":9456.68,"co":1},{"s":"Delta_Logistics","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Cancelled","u":58.95,"n":55.35,"d":59.0,"q":429.0,"sp":25289.55,"sv":1544.4,"co":0},{"s":"Gamma_Co","mo":"2023-02","yr":"2023","ca":"Electronics","st":"Delivered","u":32.76,"n":28.41,"d":62.0,"q":1618.0,"sp":53005.68,"sv":7038.3,"co":1},{"s":"Beta_Supplies","mo":"2023-03","yr":"2023","ca":"Packaging","st":"Delivered","u":27.7,"n":23.66,"d":101.0,"q":1006.0,"sp":27866.2,"sv":4064.24,"co":0},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"Electronics","st":"Partially Delivered","u":32.53,"n":29.35,"d":84.0,"q":740.0,"sp":24072.2,"sv":2353.2,"co":1},{"s":"Gamma_Co","mo":"2023-07","yr":"2023","ca":"Raw Materials","st":"Delivered","u":29.19,"n":27.24,"d":72.0,"q":1500.0,"sp":43785.0,"sv":2925.0,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":88.18,"n":77.15,"d":0,"q":1686.0,"sp":148671.48,"sv":18596.58,"co":1},{"s":"Epsilon_Group","mo":"2022-08","yr":"2022","ca":"Raw Materials","st":"Cancelled","u":42.96,"n":41.75,"d":39.0,"q":1341.0,"sp":57609.36,"sv":1622.61,"co":1},{"s":"Alpha_Inc","mo":"2023-05","yr":"2023","ca":"MRO","st":"Cancelled","u":16.42,"n":15.31,"d":36.0,"q":1908.0,"sp":31329.36,"sv":2117.88,"co":1},{"s":"Gamma_Co","mo":"2022-08","yr":"2022","ca":"MRO","st":"Partially Delivered","u":100.62,"n":90.45,"d":85.0,"q":1650.0,"sp":166023.0,"sv":16780.5,"co":1},{"s":"Alpha_Inc","mo":"2022-10","yr":"2022","ca":"MRO","st":"Delivered","u":93.57,"n":81.68,"d":29.0,"q":1490.0,"sp":139419.3,"sv":17716.1,"co":1},{"s":"Delta_Logistics","mo":"2023-03","yr":"2023","ca":"Raw Materials","st":"Delivered","u":100.04,"n":97.56,"d":187.0,"q":1241.0,"sp":124149.64,"sv":3077.68,"co":1},{"s":"Beta_Supplies","mo":"2023-05","yr":"2023","ca":"MRO","st":"Delivered","u":107.51,"n":102.66,"d":184.0,"q":1915.0,"sp":205881.65,"sv":9287.75,"co":1},{"s":"Beta_Supplies","mo":"2022-01","yr":"2022","ca":"Raw Materials","st":"Delivered","u":25.65,"n":24.28,"d":121.0,"q":1116.0,"sp":28625.4,"sv":1528.92,"co":1},{"s":"Delta_Logistics","mo":"2023-02","yr":"2023","ca":"Raw Materials","st":"Delivered","u":48.63,"n":43.28,"d":260.0,"q":1629.0,"sp":79218.27,"sv":8715.15,"co":1},{"s":"Epsilon_Group","mo":"2022-12","yr":"2022","ca":"Office Supplies","st":"Delivered","u":82.54,"n":74.63,"d":0,"q":334.0,"sp":27568.36,"sv":2641.94,"co":1},{"s":"Epsilon_Group","mo":"2023-11","yr":"2023","ca":"Packaging","st":"Delivered","u":80.63,"n":70.37,"d":0,"q":446.0,"sp":35960.98,"sv":4575.96,"co":1},{"s":"Delta_Logistics","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Delivered","u":26.47,"n":24.62,"d":6.0,"q":61.0,"sp":1614.67,"sv":112.85,"co":1},{"s":"Delta_Logistics","mo":"2023-02","yr":"2023","ca":"Packaging","st":"Delivered","u":88.85,"n":87.53,"d":0,"q":1680.0,"sp":149268.0,"sv":2217.6,"co":1},{"s":"Delta_Logistics","mo":"2022-06","yr":"2022","ca":"Electronics","st":"Delivered","u":30.95,"n":30.02,"d":223.0,"q":1375.0,"sp":42556.25,"sv":1278.75,"co":1},{"s":"Delta_Logistics","mo":"2023-04","yr":"2023","ca":"Electronics","st":"Partially Delivered","u":32.4,"n":30.48,"d":321.0,"q":1971.0,"sp":63860.4,"sv":3784.32,"co":1},{"s":"Delta_Logistics","mo":"2022-05","yr":"2022","ca":"Raw Materials","st":"Pending","u":59.49,"n":56.21,"d":0,"q":1326.0,"sp":78883.74,"sv":4349.28,"co":1},{"s":"Delta_Logistics","mo":"2023-09","yr":"2023","ca":"MRO","st":"Cancelled","u":69.7,"n":61.87,"d":90.0,"q":548.0,"sp":38195.6,"sv":4290.84,"co":1},{"s":"Beta_Supplies","mo":"2023-07","yr":"2023","ca":"MRO","st":"Delivered","u":67.81,"n":61.53,"d":78.0,"q":803.0,"sp":54451.43,"sv":5042.84,"co":1},{"s":"Alpha_Inc","mo":"2022-01","yr":"2022","ca":"MRO","st":"Delivered","u":18.23,"n":15.55,"d":0.0,"q":84.0,"sp":1531.32,"sv":225.12,"co":1},{"s":"Epsilon_Group","mo":"2023-02","yr":"2023","ca":"Packaging","st":"Delivered","u":94.75,"n":90.89,"d":19.0,"q":776.0,"sp":73526.0,"sv":2995.36,"co":1},{"s":"Alpha_Inc","mo":"2023-08","yr":"2023","ca":"MRO","st":"Delivered","u":37.12,"n":35.54,"d":18.0,"q":898.0,"sp":33333.76,"sv":1418.84,"co":0},{"s":"Beta_Supplies","mo":"2023-08","yr":"2023","ca":"Office Supplies","st":"Cancelled","u":23.71,"n":20.18,"d":14.0,"q":139.0,"sp":3295.69,"sv":490.67,"co":1},{"s":"Gamma_Co","mo":"2023-11","yr":"2023","ca":"Raw Materials","st":"Delivered","u":99.89,"n":97.65,"d":30.0,"q":825.0,"sp":82409.25,"sv":1848.0,"co":1},{"s":"Alpha_Inc","mo":"2022-01","yr":"2022","ca":"MRO","st":"Delivered","u":96.01,"n":90.31,"d":10.0,"q":654.0,"sp":62790.54,"sv":3727.8,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"MRO","st":"Delivered","u":88.47,"n":82.65,"d":87.0,"q":1995.0,"sp":176497.65,"sv":11610.9,"co":0},{"s":"Beta_Supplies","mo":"2023-10","yr":"2023","ca":"MRO","st":"Delivered","u":91.56,"n":77.93,"d":111.0,"q":1019.0,"sp":93299.64,"sv":13888.97,"co":0},{"s":"Epsilon_Group","mo":"2023-03","yr":"2023","ca":"Packaging","st":"Pending","u":73.8,"n":65.34,"d":42.0,"q":1675.0,"sp":123615.0,"sv":14170.5,"co":1},{"s":"Gamma_Co","mo":"2022-05","yr":"2022","ca":"Raw Materials","st":"Pending","u":60.77,"n":58.5,"d":0,"q":1071.0,"sp":65084.67,"sv":2431.17,"co":1},{"s":"Beta_Supplies","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Delivered","u":19.17,"n":17.11,"d":49.0,"q":467.0,"sp":8952.39,"sv":962.02,"co":1},{"s":"Delta_Logistics","mo":"2022-07","yr":"2022","ca":"MRO","st":"Pending","u":48.16,"n":47.46,"d":27.0,"q":164.0,"sp":7898.24,"sv":114.8,"co":1},{"s":"Epsilon_Group","mo":"2022-02","yr":"2022","ca":"Electronics","st":"Cancelled","u":43.76,"n":41.13,"d":18.0,"q":666.0,"sp":29144.16,"sv":1751.58,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":34.71,"n":31.56,"d":286.0,"q":1976.0,"sp":68586.96,"sv":6224.4,"co":0},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"MRO","st":"Delivered","u":79.61,"n":71.86,"d":47.0,"q":1269.0,"sp":101025.09,"sv":9834.75,"co":1},{"s":"Epsilon_Group","mo":"2022-12","yr":"2022","ca":"MRO","st":"Delivered","u":57.63,"n":51.8,"d":16.0,"q":875.0,"sp":50426.25,"sv":5101.25,"co":1},{"s":"Alpha_Inc","mo":"2022-08","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":17.9,"n":15.85,"d":31.0,"q":1574.0,"sp":28174.6,"sv":3226.7,"co":1},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Office Supplies","st":"Partially Delivered","u":32.05,"n":29.34,"d":69.0,"q":1699.0,"sp":54452.95,"sv":4604.29,"co":1},{"s":"Alpha_Inc","mo":"2022-12","yr":"2022","ca":"Electronics","st":"Delivered","u":75.43,"n":71.27,"d":27.0,"q":1566.0,"sp":118123.38,"sv":6514.56,"co":1},{"s":"Gamma_Co","mo":"2022-12","yr":"2022","ca":"Electronics","st":"Delivered","u":17.78,"n":17.16,"d":61.0,"q":1148.0,"sp":20411.44,"sv":711.76,"co":1},{"s":"Epsilon_Group","mo":"2023-01","yr":"2023","ca":"Office Supplies","st":"Delivered","u":91.81,"n":83.14,"d":11.0,"q":462.0,"sp":42416.22,"sv":4005.54,"co":1},{"s":"Gamma_Co","mo":"2022-10","yr":"2022","ca":"Packaging","st":"Delivered","u":57.02,"n":49.28,"d":71.0,"q":1449.0,"sp":82621.98,"sv":11215.26,"co":1},{"s":"Epsilon_Group","mo":"2023-03","yr":"2023","ca":"MRO","st":"Delivered","u":56.98,"n":52.51,"d":43.0,"q":1493.0,"sp":85071.14,"sv":6673.71,"co":1},{"s":"Alpha_Inc","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":65.85,"n":62.08,"d":0,"q":778.0,"sp":51231.3,"sv":2933.06,"co":0},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"Packaging","st":"Partially Delivered","u":85.06,"n":82.34,"d":0,"q":1350.0,"sp":114831.0,"sv":3672.0,"co":0},{"s":"Epsilon_Group","mo":"2023-04","yr":"2023","ca":"Packaging","st":"Delivered","u":44.4,"n":40.07,"d":26.0,"q":1070.0,"sp":47508.0,"sv":4633.1,"co":1},{"s":"Beta_Supplies","mo":"2022-01","yr":"2022","ca":"Packaging","st":"Pending","u":71.02,"n":66.8,"d":73.0,"q":810.0,"sp":57526.2,"sv":3418.2,"co":1},{"s":"Delta_Logistics","mo":"2023-07","yr":"2023","ca":"Packaging","st":"Cancelled","u":66.4,"n":62.1,"d":118.0,"q":725.0,"sp":48140.0,"sv":3117.5,"co":1},{"s":"Alpha_Inc","mo":"2022-02","yr":"2022","ca":"Electronics","st":"Delivered","u":34.2,"n":30.5,"d":25.0,"q":1467.0,"sp":50171.4,"sv":5427.9,"co":1},{"s":"Beta_Supplies","mo":"2022-12","yr":"2022","ca":"Packaging","st":"Delivered","u":93.98,"n":81.31,"d":198.0,"q":1942.0,"sp":182509.16,"sv":24605.14,"co":1},{"s":"Gamma_Co","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Delivered","u":84.63,"n":72.69,"d":20.0,"q":506.0,"sp":42822.78,"sv":6041.64,"co":1},{"s":"Alpha_Inc","mo":"2023-10","yr":"2023","ca":"MRO","st":"Delivered","u":76.53,"n":75.64,"d":30.0,"q":969.0,"sp":74157.57,"sv":862.41,"co":1},{"s":"Delta_Logistics","mo":"2022-03","yr":"2022","ca":"MRO","st":"Delivered","u":87.42,"n":82.15,"d":0,"q":241.0,"sp":21068.22,"sv":1270.07,"co":1},{"s":"Gamma_Co","mo":"2023-10","yr":"2023","ca":"Raw Materials","st":"Delivered","u":97.3,"n":94.44,"d":32.0,"q":788.0,"sp":76672.4,"sv":2253.68,"co":1},{"s":"Gamma_Co","mo":"2022-02","yr":"2022","ca":"Office Supplies","st":"Delivered","u":74.12,"n":65.71,"d":94.0,"q":1762.0,"sp":130599.44,"sv":14818.42,"co":1},{"s":"Alpha_Inc","mo":"2022-02","yr":"2022","ca":"Raw Materials","st":"Pending","u":85.76,"n":81.43,"d":25.0,"q":1172.0,"sp":100510.72,"sv":5074.76,"co":1},{"s":"Delta_Logistics","mo":"2022-09","yr":"2022","ca":"Office Supplies","st":"Delivered","u":75.68,"n":73.78,"d":226.0,"q":1621.0,"sp":122677.28,"sv":3079.9,"co":0},{"s":"Alpha_Inc","mo":"2022-07","yr":"2022","ca":"Packaging","st":"Delivered","u":73.35,"n":65.42,"d":24.0,"q":1027.0,"sp":75330.45,"sv":8144.11,"co":0},{"s":"Beta_Supplies","mo":"2022-01","yr":"2022","ca":"Raw Materials","st":"Delivered","u":65.68,"n":57.21,"d":101.0,"q":1058.0,"sp":69489.44,"sv":8961.26,"co":1},{"s":"Beta_Supplies","mo":"2023-09","yr":"2023","ca":"Packaging","st":"Delivered","u":85.52,"n":81.86,"d":11.0,"q":145.0,"sp":12400.4,"sv":530.7,"co":0},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"Office Supplies","st":"Delivered","u":24.88,"n":24.28,"d":46.0,"q":1737.0,"sp":43216.56,"sv":1042.2,"co":1},{"s":"Gamma_Co","mo":"2022-09","yr":"2022","ca":"Electronics","st":"Delivered","u":92.85,"n":89.39,"d":43.0,"q":712.0,"sp":66109.2,"sv":2463.52,"co":1},{"s":"Epsilon_Group","mo":"2022-05","yr":"2022","ca":"Electronics","st":"Delivered","u":90.24,"n":86.84,"d":28.0,"q":1263.0,"sp":113973.12,"sv":4294.2,"co":1},{"s":"Delta_Logistics","mo":"2023-04","yr":"2023","ca":"Electronics","st":"Delivered","u":13.58,"n":12.68,"d":0,"q":1809.0,"sp":24566.22,"sv":1628.1,"co":0},{"s":"Beta_Supplies","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Cancelled","u":93.6,"n":88.22,"d":5.0,"q":86.0,"sp":8049.6,"sv":462.68,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"MRO","st":"Delivered","u":21.92,"n":20.72,"d":0,"q":1853.0,"sp":40617.76,"sv":2223.6,"co":1},{"s":"Beta_Supplies","mo":"2023-08","yr":"2023","ca":"Electronics","st":"Delivered","u":43.98,"n":41.82,"d":140.0,"q":1442.0,"sp":63419.16,"sv":3114.72,"co":0},{"s":"Beta_Supplies","mo":"2022-08","yr":"2022","ca":"Office Supplies","st":"Pending","u":79.61,"n":74.97,"d":207.0,"q":1768.0,"sp":140750.48,"sv":8203.52,"co":0},{"s":"Beta_Supplies","mo":"2023-04","yr":"2023","ca":"Electronics","st":"Partially Delivered","u":26.3,"n":26.03,"d":154.0,"q":1598.0,"sp":42027.4,"sv":431.46,"co":0},{"s":"Alpha_Inc","mo":"2023-12","yr":"2023","ca":"MRO","st":"Cancelled","u":93.23,"n":82.63,"d":6.0,"q":328.0,"sp":30579.44,"sv":3476.8,"co":1},{"s":"Epsilon_Group","mo":"2022-09","yr":"2022","ca":"Packaging","st":"Delivered","u":88.29,"n":80.22,"d":4.0,"q":266.0,"sp":23485.14,"sv":2146.62,"co":1},{"s":"Gamma_Co","mo":"2023-01","yr":"2023","ca":"Raw Materials","st":"Delivered","u":59.01,"n":53.37,"d":47.0,"q":916.0,"sp":54053.16,"sv":5166.24,"co":1},{"s":"Epsilon_Group","mo":"2022-06","yr":"2022","ca":"Packaging","st":"Cancelled","u":10.84,"n":9.27,"d":29.0,"q":922.0,"sp":9994.48,"sv":1447.54,"co":1},{"s":"Gamma_Co","mo":"2023-09","yr":"2023","ca":"Packaging","st":"Delivered","u":39.42,"n":37.41,"d":101.0,"q":1871.0,"sp":73754.82,"sv":3760.71,"co":0},{"s":"Epsilon_Group","mo":"2023-09","yr":"2023","ca":"Raw Materials","st":"Delivered","u":72.08,"n":67.04,"d":38.0,"q":1346.0,"sp":97019.68,"sv":6783.84,"co":1},{"s":"Epsilon_Group","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Delivered","u":99.78,"n":87.47,"d":57.0,"q":1954.0,"sp":194970.12,"sv":24053.74,"co":1},{"s":"Beta_Supplies","mo":"2022-06","yr":"2022","ca":"Electronics","st":"Delivered","u":68.53,"n":65.22,"d":11.0,"q":111.0,"sp":7606.83,"sv":367.41,"co":1},{"s":"Gamma_Co","mo":"2022-11","yr":"2022","ca":"Office Supplies","st":"Pending","u":35.05,"n":30.88,"d":27.0,"q":645.0,"sp":22607.25,"sv":2689.65,"co":1},{"s":"Gamma_Co","mo":"2022-04","yr":"2022","ca":"Electronics","st":"Cancelled","u":68.07,"n":62.95,"d":87.0,"q":1953.0,"sp":132940.71,"sv":9999.36,"co":1},{"s":"Gamma_Co","mo":"2023-08","yr":"2023","ca":"Electronics","st":"Delivered","u":64.17,"n":61.6,"d":47.0,"q":778.0,"sp":49924.26,"sv":1999.46,"co":1},{"s":"Epsilon_Group","mo":"2022-01","yr":"2022","ca":"Office Supplies","st":"Delivered","u":80.19,"n":78.34,"d":0,"q":1415.0,"sp":113468.85,"sv":2617.75,"co":1},{"s":"Gamma_Co","mo":"2022-11","yr":"2022","ca":"Raw Materials","st":"Delivered","u":20.61,"n":19.46,"d":14.0,"q":446.0,"sp":9192.06,"sv":512.9,"co":1},{"s":"Epsilon_Group","mo":"2023-08","yr":"2023","ca":"Office Supplies","st":"Delivered","u":85.95,"n":79.16,"d":32.0,"q":748.0,"sp":64290.6,"sv":5078.92,"co":1},{"s":"Alpha_Inc","mo":"2023-11","yr":"2023","ca":"Electronics","st":"Pending","u":65.17,"n":63.11,"d":21.0,"q":1092.0,"sp":71165.64,"sv":2249.52,"co":1},{"s":"Beta_Supplies","mo":"2023-01","yr":"2023","ca":"Electronics","st":"Delivered","u":102.47,"n":99.16,"d":28.0,"q":226.0,"sp":23158.22,"sv":748.06,"co":1},{"s":"Delta_Logistics","mo":"2023-02","yr":"2023","ca":"Electronics","st":"Delivered","u":43.42,"n":42.24,"d":262.0,"q":1685.0,"sp":73162.7,"sv":1988.3,"co":1},{"s":"Alpha_Inc","mo":"2022-07","yr":"2022","ca":"Office Supplies","st":"Delivered","u":68.94,"n":60.35,"d":7.0,"q":445.0,"sp":30678.3,"sv":3822.55,"co":1},{"s":"Gamma_Co","mo":"2022-03","yr":"2022","ca":"Raw Materials","st":"Delivered","u":94.82,"n":81.89,"d":29.0,"q":494.0,"sp":46841.08,"sv":6387.42,"co":1},{"s":"Beta_Supplies","mo":"2023-08","yr":"2023","ca":"MRO","st":"Delivered","u":21.05,"n":18.27,"d":128.0,"q":1306.0,"sp":27491.3,"sv":3630.68,"co":1},{"s":"Beta_Supplies","mo":"2023-12","yr":"2023","ca":"Office Supplies","st":"Delivered","u":105.2,"n":93.23,"d":187.0,"q":1988.0,"sp":209137.6,"sv":23796.36,"co":1}];
 
-// Pre-computed aggregated data (embedded from Python analysis)
-const MONTHLY_DATA = {
-  labels: ['Jan 22','Feb 22','Mar 22','Apr 22','May 22','Jun 22','Jul 22','Aug 22','Sep 22','Oct 22','Nov 22','Dec 22','Jan 23','Feb 23','Mar 23','Apr 23','May 23','Jun 23','Jul 23','Aug 23','Sep 23','Oct 23','Nov 23','Dec 23'],
-  spend:   [1681,1509,2777,2100,1272,1709,1421,2505,2341,1954,1681,2354,2437,1919,3035,1889,1643,1498,2573,2165,2446,2017,2804,1388],
-  savings: [144,132,185,171,90,152,128,176,165,172,145,183,160,145,290,180,131,102,207,155,216,147,220,118],
-  defect:  [4.0,7.0,5.4,7.0,6.3,7.4,6.4,5.7,8.6,6.3,8.3,6.5,4.2,7.4,6.8,6.9,9.5,6.2,9.1,5.5,6.9,7.9,7.1,7.0]
+const SUP_COLORS = {
+  Alpha_Inc:'#16a34a', Beta_Supplies:'#d97706',
+  Delta_Logistics:'#dc2626', Epsilon_Group:'#2563eb', Gamma_Co:'#7c3aed'
 };
+const CAT_COLORS = ['#d97706','#16a34a','#2563eb','#7c3aed','#db2777'];
 
-const SUPPLIER_DATA = {
-  Alpha_Inc:       { orders:141, spend:8528, savings:689, defect:1.8, compliance:94, status:{Delivered:111,Cancelled:17,Partially:9,Pending:4} },
-  Beta_Supplies:   { orders:156, spend:10749, savings:890, defect:7.4, compliance:76, status:{Delivered:115,Cancelled:12,Partially:15,Pending:14} },
-  Delta_Logistics: { orders:171, spend:10018, savings:782, defect:10.6, compliance:61, status:{Delivered:120,Cancelled:16,Partially:17,Pending:18} },
-  Epsilon_Group:   { orders:166, spend:10696, savings:845, defect:2.6, compliance:98, status:{Delivered:117,Cancelled:10,Partially:18,Pending:21} },
-  Gamma_Co:        { orders:143, spend:9313, savings:725, defect:4.5, compliance:86, status:{Delivered:97,Cancelled:8,Partially:14,Pending:24} }
-};
-
-const CATEGORY_DATA = {
-  'MRO':           { spend: 11029, orders: 164 },
-  'Office Supplies':{ spend: 10852, orders: 174 },
-  'Electronics':   { spend: 9385,  orders: 152 },
-  'Raw Materials': { spend: 9180,  orders: 139 },
-  'Packaging':     { spend: 8858,  orders: 148 }
-};
-
-const STATUS_DATA = { Delivered: 560, Pending: 81, 'Partially Delivered': 73, Cancelled: 63 };
-
-const INFLATION_DATA = {
-  labels: ['Q1 22','Q2 22','Q3 22','Q4 22','Q1 23','Q2 23','Q3 23','Q4 23'],
-  unit:   [52.3, 56.1, 59.4, 61.8, 63.2, 65.0, 67.8, 71.2],
-  neg:    [47.9, 51.8, 55.1, 57.4, 58.6, 60.2, 62.8, 65.8]
-};
-
-// State
-let state = { supplier: 'all', category: 'all', status: 'all', year: 'all' };
-let charts = {};
-
-// ── CHART DEFAULTS ──
-Chart.defaults.color = '#6b7f99';
-Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.color = '#718096';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
 Chart.defaults.font.size = 11;
-
-const gridColor = 'rgba(30,45,69,0.6)';
-const tooltipDefaults = {
-  backgroundColor: '#111928',
-  borderColor: '#1e2d45',
-  borderWidth: 1,
-  padding: 10,
-  titleFont: { family: "'Syne', sans-serif", weight: '700', size: 13 },
-  bodyFont: { family: "'DM Mono', monospace", size: 11 },
-  titleColor: '#e8edf5',
-  bodyColor: '#6b7f99',
-  cornerRadius: 8,
+const GR = 'rgba(226,232,240,0.8)';
+const TT = {
+  backgroundColor:'#1e293b', borderColor:'#334155', borderWidth:1,
+  padding:10, titleColor:'#f1f5f9', bodyColor:'#94a3b8',
+  titleFont:{family:"'Inter',sans-serif",size:13,weight:'600'},
+  bodyFont:{family:"'JetBrains Mono',monospace",size:11}, cornerRadius:6
 };
 
-// ── SPEND TREND CHART ──
-function initSpendChart() {
-  const ctx = document.getElementById('spendChart');
-  charts.spend = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: MONTHLY_DATA.labels,
-      datasets: [
-        {
-          label: 'Total Spend ($K)',
-          data: MONTHLY_DATA.spend,
-          borderColor: '#f5a623',
-          backgroundColor: 'rgba(245,166,35,0.08)',
-          borderWidth: 2,
-          pointBackgroundColor: '#f5a623',
-          pointRadius: 3,
-          pointHoverRadius: 6,
-          fill: true,
-          tension: 0.4,
-          yAxisID: 'y'
-        },
-        {
-          label: 'Cost Savings ($K)',
-          data: MONTHLY_DATA.savings,
-          borderColor: '#22d3a0',
-          backgroundColor: 'rgba(34,211,160,0.08)',
-          borderWidth: 2,
-          pointBackgroundColor: '#22d3a0',
-          pointRadius: 3,
-          pointHoverRadius: 6,
-          fill: true,
-          tension: 0.4,
-          yAxisID: 'y'
-        },
-        {
-          label: 'Defect Rate (%)',
-          data: MONTHLY_DATA.defect,
-          borderColor: '#f04f5f',
-          borderWidth: 2,
-          borderDash: [4, 4],
-          pointBackgroundColor: '#f04f5f',
-          pointRadius: 2,
-          pointHoverRadius: 5,
-          fill: false,
-          tension: 0.4,
-          yAxisID: 'y2'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: { tooltip: tooltipDefaults, legend: { labels: { boxWidth: 12, padding: 20 } } },
-      scales: {
-        x: { grid: { color: gridColor }, ticks: { maxTicksLimit: 12 } },
-        y: {
-          grid: { color: gridColor },
-          ticks: { callback: v => '$' + v + 'K' },
-          title: { display: true, text: 'Amount ($K)', color: '#6b7f99' }
-        },
-        y2: {
-          position: 'right',
-          grid: { display: false },
-          ticks: { callback: v => v + '%' },
-          title: { display: true, text: 'Defect %', color: '#f04f5f' }
-        }
-      }
-    }
+let charts = {};
+let filtered = RAW;
+
+// ── FILTER ──────────────────────────────────────────────────────────────
+function getFilters(){
+  return {
+    supplier: document.getElementById('f-supplier').value,
+    category: document.getElementById('f-category').value,
+    status:   document.getElementById('f-status').value,
+    year:     document.getElementById('f-year').value,
+  };
+}
+
+function applyFilters(){
+  const f = getFilters();
+  filtered = RAW.filter(r =>
+    (f.supplier==='all' || r.s===f.supplier) &&
+    (f.category==='all' || r.ca===f.category) &&
+    (f.status==='all'   || r.st===f.status) &&
+    (f.year==='all'     || r.yr===f.year)
+  );
+  document.getElementById('filter-count').textContent = filtered.length + ' orders';
+  renderAll();
+}
+
+function resetFilters(){
+  ['f-supplier','f-category','f-status','f-year'].forEach(id=>{
+    document.getElementById(id).value='all';
+  });
+  applyFilters();
+}
+
+// ── COMPUTE ──────────────────────────────────────────────────────────────
+function compute(rows){
+  const totalSpend   = rows.reduce((a,r)=>a+r.sp,0);
+  const totalSavings = rows.reduce((a,r)=>a+r.sv,0);
+  const delivered    = rows.filter(r=>r.st==='Delivered');
+  const defectRows   = delivered.filter(r=>r.q>0);
+  const defectRate   = defectRows.length
+    ? defectRows.reduce((a,r)=>a+(r.d/r.q*100),0)/defectRows.length : 0;
+  const compliance   = rows.length
+    ? rows.reduce((a,r)=>a+r.co,0)/rows.length*100 : 0;
+  const delivPct     = rows.length ? delivered.length/rows.length*100 : 0;
+
+  // By supplier
+  const sups = {};
+  rows.forEach(r=>{
+    if(!sups[r.s]) sups[r.s]={orders:0,spend:0,savings:0,defects:0,units:0,compliant:0,delivered:0,cancelled:0,partial:0,pending:0};
+    const s=sups[r.s];
+    s.orders++; s.spend+=r.sp; s.savings+=r.sv; s.compliant+=r.co;
+    if(r.st==='Delivered'){s.delivered++;if(r.q>0){s.defects+=r.d;s.units+=r.q;}}
+    if(r.st==='Cancelled') s.cancelled++;
+    if(r.st==='Partially Delivered') s.partial++;
+    if(r.st==='Pending') s.pending++;
+  });
+
+  // By category
+  const cats = {};
+  rows.forEach(r=>{
+    if(!cats[r.ca]) cats[r.ca]={spend:0,orders:0};
+    cats[r.ca].spend+=r.sp; cats[r.ca].orders++;
+  });
+
+  // By month
+  const months = {};
+  rows.forEach(r=>{
+    if(!r.mo) return;
+    if(!months[r.mo]) months[r.mo]={spend:0,savings:0,orders:0};
+    months[r.mo].spend+=r.sp;
+    months[r.mo].savings+=r.sv;
+    months[r.mo].orders++;
+  });
+
+  // Status counts
+  const statuses = {};
+  rows.forEach(r=>{
+    statuses[r.st]=(statuses[r.st]||0)+1;
+  });
+
+  return {totalSpend,totalSavings,defectRate,compliance,delivPct,sups,cats,months,statuses,total:rows.length};
+}
+
+// ── FORMAT ───────────────────────────────────────────────────────────────
+function fmtM(v){
+  if(v>=1e6) return '$'+(v/1e6).toFixed(2)+'M';
+  if(v>=1e3) return '$'+(v/1e3).toFixed(0)+'K';
+  return '$'+v.toFixed(0);
+}
+function fmtPct(v){ return v.toFixed(1)+'%'; }
+
+// ── UPDATE CHARTS ────────────────────────────────────────────────────────
+function updateChart(key, type, data, options){
+  if(charts[key]) charts[key].destroy();
+  const ctx = document.getElementById('ch-'+key);
+  if(!ctx) return;
+  charts[key] = new Chart(ctx, {type, data, options});
+}
+
+// ── RENDER ALL ───────────────────────────────────────────────────────────
+function renderAll(){
+  const d = compute(filtered);
+  renderKPIs(d);
+  renderSpendChart(d);
+  renderStatusChart(d);
+  renderSupplierCharts(d);
+  renderScorecard(d);
+  renderCategoryBars(d);
+  renderPriceChart(d);
+  renderVolumeChart(d);
+  renderScatter(d);
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────
+function renderKPIs(d){
+  document.getElementById('kpi-spend').textContent   = fmtM(d.totalSpend);
+  document.getElementById('kpi-spend-sub').textContent = d.total+' purchase orders';
+  document.getElementById('kpi-spend-d').textContent = fmtPct(d.totalSavings/d.totalSpend*100)+' savings rate';
+
+  document.getElementById('kpi-savings').textContent = fmtM(d.totalSavings);
+  document.getElementById('kpi-savings-d').textContent = 'vs list price';
+
+  document.getElementById('kpi-defect').textContent  = fmtPct(d.defectRate);
+  document.getElementById('kpi-defect-d').textContent = d.defectRate>5 ? '↑ above 5% target' : '↓ within target';
+
+  document.getElementById('kpi-compliance').textContent = fmtPct(d.compliance);
+  document.getElementById('kpi-compliance-sub').textContent = Math.round(d.total*(100-d.compliance)/100)+' non-compliant POs';
+  document.getElementById('kpi-compliance-d').textContent = fmtPct(100-d.compliance)+' policy gap';
+
+  const delCount = filtered.filter(r=>r.st==='Delivered').length;
+  document.getElementById('kpi-delivered').textContent = fmtPct(d.delivPct);
+  document.getElementById('kpi-delivered-sub').textContent = delCount+' of '+d.total+' orders';
+}
+
+// ── SPEND TREND ───────────────────────────────────────────────────────────
+function renderSpendChart(d){
+  const monthKeys = Object.keys(d.months).sort();
+  const labels = monthKeys.map(m=>{
+    const [y,mo]=m.split('-');
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo-1]+' '+y.slice(2);
+  });
+  updateChart('spend','line',{
+    labels,
+    datasets:[
+      {label:'Spend ($K)',data:monthKeys.map(m=>+(d.months[m].spend/1000).toFixed(1)),borderColor:'#d97706',backgroundColor:'rgba(217,119,6,.08)',borderWidth:2,pointRadius:0,pointHoverRadius:4,fill:true,tension:.35,yAxisID:'y'},
+      {label:'Savings ($K)',data:monthKeys.map(m=>+(d.months[m].savings/1000).toFixed(1)),borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.08)',borderWidth:2,pointRadius:0,pointHoverRadius:4,fill:true,tension:.35,yAxisID:'y'},
+    ]
+  },{
+    responsive:true,interaction:{intersect:false,mode:'index'},
+    plugins:{tooltip:TT,legend:{labels:{boxWidth:10,padding:16,usePointStyle:true,color:'#718096'}}},
+    scales:{x:{grid:{color:GR},ticks:{maxTicksLimit:12,color:'#94a3b8'}},y:{grid:{color:GR},ticks:{callback:v=>'$'+v+'K',color:'#94a3b8'}}}
   });
 }
 
-// ── CATEGORY DONUT ──
-function initCategoryChart() {
-  const ctx = document.getElementById('categoryChart');
-  const cats = Object.keys(CATEGORY_DATA);
-  const vals = cats.map(c => CATEGORY_DATA[c].spend);
-  charts.category = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: cats,
-      datasets: [{
-        data: vals,
-        backgroundColor: ['#f5a623','#22d3a0','#4fa3f7','#a78bfa','#f04f5f'],
-        borderColor: '#0d1420',
-        borderWidth: 3,
-        hoverOffset: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      cutout: '68%',
-      plugins: {
-        tooltip: {
-          ...tooltipDefaults,
-          callbacks: { label: ctx => ` $${ctx.parsed.toLocaleString()}K · ${ctx.label}` }
-        },
-        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } }
-      }
-    }
+// ── STATUS CHART ──────────────────────────────────────────────────────────
+function renderStatusChart(d){
+  const order=['Delivered','Pending','Partially Delivered','Cancelled'];
+  const colors=['#16a34a','#2563eb','#d97706','#dc2626'];
+  const vals=order.map(s=>d.statuses[s]||0);
+  const total=vals.reduce((a,b)=>a+b,0);
+  updateChart('status','doughnut',{
+    labels:order,
+    datasets:[{data:vals,backgroundColor:colors.map(c=>c+'33'),borderColor:colors,borderWidth:2,hoverOffset:5}]
+  },{
+    cutout:'68%',
+    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.parsed} orders (${total?fmtPct(c.parsed/total*100):'0%'})`}},legend:{display:false}}
+  });
+  const leg=document.getElementById('status-legend');
+  leg.innerHTML=order.map((s,i)=>`
+    <div class="sl-row">
+      <div class="sl-left"><div class="sup-dot" style="background:${colors[i]}"></div>${s}</div>
+      <div class="sl-val">${vals[i]} <span class="sl-pct">(${total?fmtPct(vals[i]/total*100):'0%'})</span></div>
+    </div>`).join('');
+}
+
+// ── SUPPLIER CHARTS ───────────────────────────────────────────────────────
+function renderSupplierCharts(d){
+  const snames = Object.keys(d.sups);
+  const colors = snames.map(s=>SUP_COLORS[s]||'#718096');
+  const defects = snames.map(s=>{const sup=d.sups[s];return sup.units>0?+(sup.defects/sup.units*100).toFixed(1):0;});
+  const comps   = snames.map(s=>+(d.sups[s].compliant/d.sups[s].orders*100).toFixed(1));
+  const savRates= snames.map(s=>d.sups[s].spend>0?+(d.sups[s].savings/d.sups[s].spend*100).toFixed(1):0);
+
+  const barOpts=(yMax,fmt)=>({
+    indexAxis:'y',responsive:true,
+    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${fmt(c.parsed.x)}`}},legend:{display:false}},
+    scales:{x:{grid:{color:GR},ticks:{callback:v=>fmt(v),color:'#94a3b8'},max:yMax},y:{grid:{display:false},ticks:{color:'#718096'}}}
+  });
+
+  updateChart('defect','bar',{
+    labels:snames.map(s=>s.replace('_',' ')),
+    datasets:[{label:'Defect %',data:defects,
+      backgroundColor:defects.map((v,i)=>colors[i]+'33'),
+      borderColor:defects.map((v,i)=>colors[i]),
+      borderWidth:1.5,borderRadius:5}]
+  },barOpts(20,v=>v+'%'));
+
+  updateChart('comp','bar',{
+    labels:snames.map(s=>s.replace('_',' ')),
+    datasets:[{label:'Compliance %',data:comps,
+      backgroundColor:comps.map((v,i)=>colors[i]+'33'),
+      borderColor:comps.map((v,i)=>colors[i]),
+      borderWidth:1.5,borderRadius:5}]
+  },barOpts(105,v=>v+'%'));
+
+  updateChart('savings','bar',{
+    labels:snames.map(s=>s.replace('_',' ')),
+    datasets:[{label:'Savings %',data:savRates,
+      backgroundColor:savRates.map((v,i)=>colors[i]+'33'),
+      borderColor:savRates.map((v,i)=>colors[i]),
+      borderWidth:1.5,borderRadius:5}]
+  },barOpts(15,v=>v+'%'));
+
+  // Spend vs savings grouped
+  updateChart('supspend','bar',{
+    labels:snames.map(s=>s.replace('_',' ')),
+    datasets:[
+      {label:'Spend ($K)',data:snames.map(s=>+(d.sups[s].spend/1000).toFixed(0)),backgroundColor:'rgba(217,119,6,.15)',borderColor:'#d97706',borderWidth:1.5,borderRadius:5},
+      {label:'Savings ($K)',data:snames.map(s=>+(d.sups[s].savings/1000).toFixed(0)),backgroundColor:'rgba(22,163,74,.15)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:5},
+    ]
+  },{
+    responsive:true,
+    plugins:{tooltip:TT,legend:{labels:{boxWidth:10,usePointStyle:true,color:'#718096'}}},
+    scales:{x:{grid:{display:false},ticks:{color:'#718096'}},y:{grid:{color:GR},ticks:{callback:v=>'$'+v+'K',color:'#94a3b8'}}}
+  });
+
+  // Stacked status
+  updateChart('supstatus','bar',{
+    labels:snames.map(s=>s.replace('_',' ')),
+    datasets:[
+      {label:'Delivered', data:snames.map(s=>d.sups[s].delivered),backgroundColor:'rgba(22,163,74,.2)',borderColor:'#16a34a',borderWidth:1,borderRadius:3},
+      {label:'Pending',   data:snames.map(s=>d.sups[s].pending),  backgroundColor:'rgba(37,99,235,.2)',borderColor:'#2563eb',borderWidth:1,borderRadius:3},
+      {label:'Partial',   data:snames.map(s=>d.sups[s].partial),  backgroundColor:'rgba(217,119,6,.2)',borderColor:'#d97706',borderWidth:1,borderRadius:3},
+      {label:'Cancelled', data:snames.map(s=>d.sups[s].cancelled),backgroundColor:'rgba(220,38,38,.2)',borderColor:'#dc2626',borderWidth:1,borderRadius:3},
+    ]
+  },{
+    responsive:true,
+    plugins:{tooltip:TT,legend:{labels:{boxWidth:10,usePointStyle:true,color:'#718096'}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#718096'}},y:{stacked:true,grid:{color:GR},ticks:{color:'#94a3b8'}}}
   });
 }
 
-// ── DEFECT CHART ──
-function initDefectChart() {
-  const ctx = document.getElementById('defectChart');
-  const suppliers = Object.keys(SUPPLIER_DATA);
-  const defects = suppliers.map(s => SUPPLIER_DATA[s].defect);
-  const colors = defects.map(d => d > 8 ? '#f04f5f' : d > 5 ? '#fbbf24' : '#22d3a0');
-
-  charts.defect = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: suppliers.map(s => s.replace('_', ' ')),
-      datasets: [{
-        label: 'Defect Rate (%)',
-        data: defects,
-        backgroundColor: colors.map(c => c + '33'),
-        borderColor: colors,
-        borderWidth: 2,
-        borderRadius: 6
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      plugins: {
-        tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` ${ctx.parsed.x}% defect rate` } },
-        legend: { display: false }
-      },
-      scales: {
-        x: { grid: { color: gridColor }, ticks: { callback: v => v + '%' }, max: 15 },
-        y: { grid: { display: false } }
-      }
-    }
-  });
-}
-
-// ── COMPLIANCE CHART ──
-function initComplianceChart() {
-  const ctx = document.getElementById('complianceChart');
-  const suppliers = Object.keys(SUPPLIER_DATA);
-  const rates = suppliers.map(s => SUPPLIER_DATA[s].compliance);
-  const colors = rates.map(r => r >= 90 ? '#22d3a0' : r >= 75 ? '#fbbf24' : '#f04f5f');
-
-  charts.compliance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: suppliers.map(s => s.replace('_', ' ')),
-      datasets: [{
-        label: 'Compliance %',
-        data: rates,
-        backgroundColor: colors.map(c => c + '33'),
-        borderColor: colors,
-        borderWidth: 2,
-        borderRadius: 6
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      plugins: {
-        tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` ${ctx.parsed.x}% compliant` } },
-        legend: { display: false }
-      },
-      scales: {
-        x: { grid: { color: gridColor }, ticks: { callback: v => v + '%' }, max: 105 },
-        y: { grid: { display: false } }
-      }
-    }
-  });
-}
-
-// ── ORDER STATUS CHART ──
-function initStatusChart() {
-  const ctx = document.getElementById('statusChart');
-  charts.status = new Chart(ctx, {
-    type: 'pie',
-    data: {
-      labels: Object.keys(STATUS_DATA),
-      datasets: [{
-        data: Object.values(STATUS_DATA),
-        backgroundColor: ['#22d3a044','#4fa3f744','#fbbf2444','#f04f5f44'],
-        borderColor: ['#22d3a0','#4fa3f7','#fbbf24','#f04f5f'],
-        borderWidth: 2,
-        hoverOffset: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        tooltip: {
-          ...tooltipDefaults,
-          callbacks: {
-            label: ctx => ` ${ctx.parsed} orders (${(ctx.parsed/777*100).toFixed(1)}%)`
-          }
-        },
-        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } }
-      }
-    }
-  });
-}
-
-// ── SUPPLIER SPEND BAR ──
-function initSpendSupplierChart() {
-  const ctx = document.getElementById('spendSupplierChart');
-  const suppliers = Object.keys(SUPPLIER_DATA);
-  const spends = suppliers.map(s => SUPPLIER_DATA[s].spend);
-  const savings = suppliers.map(s => SUPPLIER_DATA[s].savings);
-
-  charts.spendSupplier = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: suppliers.map(s => s.replace('_', ' ')),
-      datasets: [
-        {
-          label: 'Total Spend ($K)',
-          data: spends,
-          backgroundColor: 'rgba(245,166,35,0.25)',
-          borderColor: '#f5a623',
-          borderWidth: 2,
-          borderRadius: 6
-        },
-        {
-          label: 'Savings ($K)',
-          data: savings,
-          backgroundColor: 'rgba(34,211,160,0.25)',
-          borderColor: '#22d3a0',
-          borderWidth: 2,
-          borderRadius: 6
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` $${ctx.parsed.y.toLocaleString()}K` } },
-        legend: { labels: { boxWidth: 12, padding: 16 } }
-      },
-      scales: {
-        x: { grid: { display: false } },
-        y: { grid: { color: gridColor }, ticks: { callback: v => '$' + v + 'K' } }
-      }
-    }
-  });
-}
-
-// ── INFLATION CHART ──
-function initInflationChart() {
-  const ctx = document.getElementById('inflationChart');
-  charts.inflation = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: INFLATION_DATA.labels,
-      datasets: [
-        {
-          label: 'Avg Unit Price',
-          data: INFLATION_DATA.unit,
-          borderColor: '#f04f5f',
-          backgroundColor: 'rgba(240,79,95,0.08)',
-          borderWidth: 2,
-          pointRadius: 4,
-          fill: true,
-          tension: 0.4
-        },
-        {
-          label: 'Negotiated Price',
-          data: INFLATION_DATA.neg,
-          borderColor: '#22d3a0',
-          backgroundColor: 'rgba(34,211,160,0.08)',
-          borderWidth: 2,
-          pointRadius: 4,
-          fill: true,
-          tension: 0.4
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: {
-        tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` $${ctx.parsed.y.toFixed(2)}` } },
-        legend: { labels: { boxWidth: 12, padding: 16 } }
-      },
-      scales: {
-        x: { grid: { color: gridColor } },
-        y: { grid: { color: gridColor }, ticks: { callback: v => '$' + v }, title: { display: true, text: 'Avg Price ($)', color: '#6b7f99' } }
-      }
-    }
-  });
-}
-
-// ── RISK SCATTER CHART ──
-function initRiskChart() {
-  const ctx = document.getElementById('riskChart');
-  const suppliers = Object.keys(SUPPLIER_DATA);
-  const points = suppliers.map(s => ({
-    x: SUPPLIER_DATA[s].defect,
-    y: SUPPLIER_DATA[s].compliance,
-    label: s.replace('_', ' ')
-  }));
-
-  const colors = ['#22d3a0', '#fbbf24', '#f04f5f', '#22d3a0', '#4fa3f7'];
-
-  charts.risk = new Chart(ctx, {
-    type: 'scatter',
-    data: {
-      datasets: suppliers.map((s, i) => ({
-        label: s.replace('_', ' '),
-        data: [{ x: SUPPLIER_DATA[s].defect, y: SUPPLIER_DATA[s].compliance }],
-        backgroundColor: colors[i] + '44',
-        borderColor: colors[i],
-        borderWidth: 2,
-        pointRadius: 12,
-        pointHoverRadius: 16
-      }))
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        tooltip: {
-          ...tooltipDefaults,
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label} · Defect: ${ctx.parsed.x}% · Compliance: ${ctx.parsed.y}%`
-          }
-        },
-        legend: { labels: { boxWidth: 10, padding: 10 } }
-      },
-      scales: {
-        x: {
-          grid: { color: gridColor },
-          title: { display: true, text: 'Defect Rate (%) →', color: '#f04f5f' },
-          min: 0, max: 14
-        },
-        y: {
-          grid: { color: gridColor },
-          title: { display: true, text: '← Compliance (%)', color: '#22d3a0' },
-          min: 50, max: 105
-        }
-      }
-    }
-  });
-}
-
-// ── SUPPLIER TABLE ──
-function renderSupplierTable() {
-  const tbody = document.getElementById('supplierTableBody');
-  const rows = Object.entries(SUPPLIER_DATA).map(([name, d]) => {
-    const risk = d.defect > 8 || d.compliance < 70 ? 'HIGH' : d.defect > 5 || d.compliance < 85 ? 'MED' : 'LOW';
-    const riskClass = { HIGH: 'risk-high', MED: 'risk-med', LOW: 'risk-low' }[risk];
-    const savingsPct = ((d.savings / d.spend) * 100).toFixed(1);
-    const defectColor = d.defect > 8 ? '#f04f5f' : d.defect > 5 ? '#fbbf24' : '#22d3a0';
-    const compColor = d.compliance >= 90 ? '#22d3a0' : d.compliance >= 75 ? '#fbbf24' : '#f04f5f';
-
-    return `<tr>
-      <td><span class="supplier-name">${name.replace('_', ' ')}</span></td>
-      <td>${d.orders}</td>
-      <td style="color:#f5a623">$${d.spend.toLocaleString()}K</td>
-      <td style="color:#22d3a0">$${d.savings.toLocaleString()}K <span style="color:var(--muted)">(${savingsPct}%)</span></td>
-      <td>
-        <span style="color:${defectColor}">${d.defect}%</span>
-        <div class="bar-mini"><div class="bar-fill" style="width:${d.defect/15*100}%;background:${defectColor}"></div></div>
-      </td>
-      <td>
-        <span style="color:${compColor}">${d.compliance}%</span>
-        <div class="bar-mini"><div class="bar-fill" style="width:${d.compliance}%;background:${compColor}"></div></div>
-      </td>
-      <td><span class="risk-pill ${riskClass}">${risk}</span></td>
+// ── SCORECARD TABLE ───────────────────────────────────────────────────────
+function renderScorecard(d){
+  const tbody=document.getElementById('tbl-body');
+  if(!Object.keys(d.sups).length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">No data for current filters</td></tr>';return;}
+  tbody.innerHTML=Object.entries(d.sups).map(([name,s])=>{
+    const dr=s.units>0?s.defects/s.units*100:0;
+    const cr=s.compliant/s.orders*100;
+    const pct=s.spend>0?s.savings/s.spend*100:0;
+    const risk=dr>8||cr<70?'H':dr>5||cr<85?'M':'L';
+    const dc=dr>8?'var(--red)':dr>5?'var(--amber)':'var(--green)';
+    const cc=cr>=90?'var(--green)':cr>=75?'var(--amber)':'var(--red)';
+    const c=SUP_COLORS[name]||'#718096';
+    return`<tr>
+      <td><div class="dot-row"><div class="sup-dot" style="background:${c}"></div><span class="sup-name">${name.replace('_',' ')}</span></div></td>
+      <td>${s.orders}</td>
+      <td style="color:var(--amber);font-weight:600">${fmtM(s.spend)}</td>
+      <td style="color:var(--green);font-weight:600">${fmtM(s.savings)} <span style="color:var(--muted)">(${pct.toFixed(1)}%)</span></td>
+      <td><div class="mini-bar-wrap"><div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.min(dr/18*100,100)}%;background:${dc}"></div></div><span style="color:${dc};font-weight:600">${dr.toFixed(1)}%</span></div></td>
+      <td><div class="mini-bar-wrap"><div class="mini-bar-track"><div class="mini-bar-fill" style="width:${cr}%;background:${cc}"></div></div><span style="color:${cc};font-weight:600">${cr.toFixed(0)}%</span></div></td>
+      <td><span class="risk-pill risk-${risk}">${risk==='H'?'HIGH':risk==='M'?'MED':'LOW'}</span></td>
     </tr>`;
   }).join('');
-  tbody.innerHTML = rows;
 }
 
-// ── FILTERS ──
-function applyFilters() {
-  const sup = document.getElementById('filterSupplier').value;
-  const cat = document.getElementById('filterCategory').value;
-  const sta = document.getElementById('filterStatus').value;
-  const yr  = document.getElementById('filterYear').value;
-
-  // Update KPIs based on filter (simplified - in production would recalculate from raw data)
-  if (sup !== 'all') {
-    const d = SUPPLIER_DATA[sup] || {};
-    document.getElementById('kpiSpend').textContent = '$' + (d.spend/1000).toFixed(1) + 'M';
-    document.getElementById('kpiSavings').textContent = '$' + (d.savings/1000).toFixed(2) + 'M';
-    document.getElementById('kpiDefect').textContent = d.defect + '%';
-    document.getElementById('kpiCompliance').textContent = d.compliance + '%';
-    document.getElementById('kpiSpendSub').textContent = d.orders + ' purchase orders';
-  } else {
-    resetKPIs();
-  }
+// ── CATEGORY BARS ─────────────────────────────────────────────────────────
+function renderCategoryBars(d){
+  const sorted=Object.entries(d.cats).sort((a,b)=>b[1].spend-a[1].spend);
+  const max=sorted.length?sorted[0][1].spend:1;
+  document.getElementById('cat-list').innerHTML=sorted.map(([name,c],i)=>`
+    <div>
+      <div class="cat-item-head"><span class="cat-name">${name}</span><span class="cat-val">${fmtM(c.spend)} · ${c.orders} POs</span></div>
+      <div class="cat-track"><div class="cat-fill" style="width:${c.spend/max*100}%;background:${CAT_COLORS[i%CAT_COLORS.length]}"></div></div>
+    </div>`).join('');
 }
 
-function resetKPIs() {
-  document.getElementById('kpiSpend').textContent = '$49.3M';
-  document.getElementById('kpiSavings').textContent = '$3.93M';
-  document.getElementById('kpiDefect').textContent = '6.5%';
-  document.getElementById('kpiCompliance').textContent = '83%';
-  document.getElementById('kpiSpendSub').textContent = '777 purchase orders';
-}
-
-function resetFilters() {
-  ['filterSupplier','filterCategory','filterStatus','filterYear'].forEach(id => {
-    document.getElementById(id).value = id === 'filterYear' ? 'all' : 'all';
+// ── PRICE CHART ───────────────────────────────────────────────────────────
+function renderPriceChart(d){
+  const snames=Object.keys(d.sups);
+  const unitAvg=snames.map(s=>{
+    const rows=filtered.filter(r=>r.s===s&&r.u>0);
+    return rows.length?+(rows.reduce((a,r)=>a+r.u,0)/rows.length).toFixed(2):0;
   });
-  resetKPIs();
+  const negAvg=snames.map(s=>{
+    const rows=filtered.filter(r=>r.s===s&&r.n>0);
+    return rows.length?+(rows.reduce((a,r)=>a+r.n,0)/rows.length).toFixed(2):0;
+  });
+  updateChart('price','bar',{
+    labels:snames.map(s=>s.replace('_',' ')),
+    datasets:[
+      {label:'Avg Unit Price',data:unitAvg,backgroundColor:'rgba(220,38,38,.15)',borderColor:'#dc2626',borderWidth:1.5,borderRadius:5},
+      {label:'Avg Negotiated',data:negAvg,backgroundColor:'rgba(22,163,74,.15)',borderColor:'#16a34a',borderWidth:1.5,borderRadius:5},
+    ]
+  },{
+    responsive:true,
+    plugins:{tooltip:{...TT,callbacks:{label:c=>` $${c.parsed.y.toFixed(2)}`}},legend:{labels:{boxWidth:10,usePointStyle:true,color:'#718096'}}},
+    scales:{x:{grid:{display:false},ticks:{color:'#718096'}},y:{grid:{color:GR},ticks:{callback:v=>'$'+v,color:'#94a3b8'}}}
+  });
 }
 
-// ── INIT ──
-window.addEventListener('load', () => {
-  initSpendChart();
-  initCategoryChart();
-  initDefectChart();
-  initComplianceChart();
-  initStatusChart();
-  initSpendSupplierChart();
-  initInflationChart();
-  initRiskChart();
-  renderSupplierTable();
-});
+// ── VOLUME CHART ──────────────────────────────────────────────────────────
+function renderVolumeChart(d){
+  const monthKeys=Object.keys(d.months).sort();
+  const labels=monthKeys.map(m=>{
+    const[y,mo]=m.split('-');
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo-1]+' '+y.slice(2);
+  });
+  updateChart('vol','bar',{
+    labels,
+    datasets:[{label:'Orders',data:monthKeys.map(m=>d.months[m].orders),backgroundColor:'rgba(37,99,235,.15)',borderColor:'#2563eb',borderWidth:1.5,borderRadius:4}]
+  },{
+    responsive:true,
+    plugins:{tooltip:TT,legend:{display:false}},
+    scales:{x:{grid:{display:false},ticks:{maxTicksLimit:12,color:'#94a3b8'}},y:{grid:{color:GR},ticks:{color:'#94a3b8'}}}
+  });
+}
+
+// ── SCATTER ───────────────────────────────────────────────────────────────
+function renderScatter(d){
+  const snames=Object.keys(d.sups);
+  updateChart('scatter','scatter',{
+    datasets:snames.map(name=>{
+      const s=d.sups[name];
+      const dr=s.units>0?s.defects/s.units*100:0;
+      const cr=s.compliant/s.orders*100;
+      return{
+        label:name.replace('_',' '),
+        data:[{x:+dr.toFixed(1),y:+cr.toFixed(1)}],
+        backgroundColor:(SUP_COLORS[name]||'#718096')+'33',
+        borderColor:SUP_COLORS[name]||'#718096',
+        borderWidth:2,pointRadius:14,pointHoverRadius:18
+      };
+    })
+  },{
+    responsive:true,
+    plugins:{
+      tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label} — defect: ${c.parsed.x}%, compliance: ${c.parsed.y}%`}},
+      legend:{labels:{boxWidth:10,usePointStyle:true,color:'#718096'}}
+    },
+    scales:{
+      x:{grid:{color:GR},title:{display:true,text:'Defect Rate (%) →',color:'#dc2626'},min:0,max:20,ticks:{color:'#94a3b8'}},
+      y:{grid:{color:GR},title:{display:true,text:'← Compliance (%)',color:'#16a34a'},min:50,max:105,ticks:{color:'#94a3b8'}}
+    }
+  });
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────────────
+applyFilters();
 </script>
 </body>
 </html>
